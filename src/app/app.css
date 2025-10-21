@@ -1,0 +1,42 @@
+/* Toast host styles */
+.toast-container {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  z-index: 1000;
+}
+
+.toast {
+  background: #111827;
+  color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+  padding: 0.5rem;
+  min-width: 240px;
+  max-width: 360px;
+}
+.toast.success { background: #065f46; }
+.toast.error { background: #7f1d1d; }
+.toast.info { background: #1f2937; }
+.toast.warning { background: #78350f; }
+
+.toast-content {
+  display: flex;
+  align-items: start;
+  gap: 0.5rem;
+}
+.toast-text { display: grid; }
+.toast-text strong { font-size: 0.95rem; }
+.toast-text span { font-size: 0.9rem; opacity: 0.95; }
+
+.toast-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}

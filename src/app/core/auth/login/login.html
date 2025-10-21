@@ -1,0 +1,76 @@
+<div class="content">
+  <form class="form" (ngSubmit)="login()" autocomplete="on">
+    <div class="icon-strip">
+      <span class="material-symbols-outlined icono"
+            style="background-color: rgb(250, 83, 83)"
+            role="button" tabindex="0"
+            [class.active]="selectedIcon===0"
+            (click)="selectIcon(0)"
+            (keydown.enter)="selectIcon(0)"
+            (keydown.space)="selectIcon(0)">person</span>
+      <span class="material-symbols-outlined icono"
+            style="background-color: rgb(229, 248, 57)"
+            role="button" tabindex="0"
+            [class.active]="selectedIcon===1"
+            (click)="selectIcon(1)"
+            (keydown.enter)="selectIcon(1)"
+            (keydown.space)="selectIcon(1)">person</span>
+      <span class="material-symbols-outlined icono"
+            style="background-color: rgb(229, 248, 57)"
+            role="button" tabindex="0"
+            [class.active]="selectedIcon===2"
+            (click)="selectIcon(2)"
+            (keydown.enter)="selectIcon(2)"
+            (keydown.space)="selectIcon(2)">person</span>
+      <span class="material-symbols-outlined icono"
+            style="background-color: aquamarine"
+            role="button" tabindex="0"
+            [class.active]="selectedIcon===3"
+            (click)="selectIcon(3)"
+            (keydown.enter)="selectIcon(3)"
+            (keydown.space)="selectIcon(3)">person</span>
+      <span class="material-symbols-outlined icono"
+            style="background-color: aquamarine"
+            role="button" tabindex="0"
+            [class.active]="selectedIcon===4"
+            (click)="selectIcon(4)"
+            (keydown.enter)="selectIcon(4)"
+            (keydown.space)="selectIcon(4)">person</span>
+      <span class="material-symbols-outlined icono"
+            style="background-color: aquamarine"
+            role="button" tabindex="0"
+            [class.active]="selectedIcon===5"
+            (click)="selectIcon(5)"
+            (keydown.enter)="selectIcon(5)"
+            (keydown.space)="selectIcon(5)">person</span>
+    </div>
+    <br>
+    <h2>Iniciar sesión</h2>
+    <label>
+      <span>Usuario</span>
+      <input type="text" [(ngModel)]="usuario" name="usuario" required />
+    </label>
+    <label>
+      <span>Contraseña</span>
+      <input type="password" [(ngModel)]="password" name="password" required />
+    </label>
+    <div class="actions">
+      <button type="submit" class="btn">Entrar</button>
+      <button type="button" class="btn-secondary" (click)="volver.emit()">Volver</button>
+    </div>
+    <div class="hint">
+      ¿Sin cuenta? <button type="button" class="link" (click)="registrar.emit()">Crear una</button>
+    </div>
+    <div class="legend" aria-label="Leyenda de perfiles">
+      <span class="legend-item"
+        ><span class="legend-dot legend-red"></span> Rojo: due&ntilde;o</span
+      >
+      <span class="legend-item"
+        ><span class="legend-dot legend-yellow"></span> Amarillo: especialista</span
+      >
+      <span class="legend-item"
+        ><span class="legend-dot legend-teal"></span> Turquesa: paciente</span
+      >
+    </div>
+  </form>
+</div>

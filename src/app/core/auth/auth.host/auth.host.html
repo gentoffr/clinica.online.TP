@@ -1,0 +1,15 @@
+<div class="panel" [class.mode-register]="vistaIndex===2">
+      <div class="frame" [class.wide]="vistaIndex===2">
+        <div class="track" [style.transform]="'translateX(' + (-33 * vistaIndex) + '%)'"><!-- 0, -100, -200 -->
+          <section class="slide">
+            <app-bienvenida (ingresar)="ir(1)" (registrar)="ir(2)"></app-bienvenida>
+          </section>
+          <section class="slide">
+            <app-login (volver)="ir(0)" (registrar)="ir(2)"></app-login>
+          </section>
+          <section class="slide">
+            <app-register (volver)="ir(0)" (ingresar)="ir(1)"></app-register>
+          </section>
+        </div>
+      </div>
+    </div>

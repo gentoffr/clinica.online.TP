@@ -1,0 +1,116 @@
+<div class="content">
+  <div class="toggle" role="tablist" aria-label="Tipo de registro">
+    <button [class.active]="tipo === 'paciente'" (click)="setTipo('paciente')">
+      Registro paciente
+    </button>
+    <button [class.active]="tipo === 'especialista'" (click)="setTipo('especialista')">
+      Registro especialista
+    </button>
+  </div>
+
+  <form class="form" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    <div class="row">
+      <label>
+        <span>Nombre</span>
+        <input formControlName="nombre" type="text" />
+        <small *ngIf="invalid('nombre')">Requerido. Solo letras.</small>
+      </label>
+      <label>
+        <span>Apellido</span>
+        <input formControlName="apellido" type="text" />
+        <small *ngIf="invalid('apellido')">Requerido. Solo letras.</small>
+      </label>
+    </div>
+
+    <div class="row">
+      <label>
+        <span>Edad</span>
+        <input formControlName="edad" type="number" min="0" />
+        <small *ngIf="invalid('edad')">Número válido (0+).</small>
+      </label>
+      <label>
+        <span>DNI</span>
+        <input formControlName="dni" type="text" inputmode="numeric" />
+        <small *ngIf="invalid('dni')">7–9 dígitos.</small>
+      </label>
+    </div>
+
+    <ng-container *ngIf="tipo === 'paciente'; else especialistaBlock">
+      <label>
+        <span>Obra Social</span>
+        <input formControlName="obraSocial" type="text" />
+      </label>
+    </ng-container>
+
+    <ng-template #especialistaBlock>
+      <div class="row">
+        <label class="full">
+          <span>Especialidad</span>
+          <select formControlName="especialidad">
+            <option *ngFor="let e of especialidades" [value]="e">{{ e }}</option>
+            <option value="__otra__">Otra…</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" *ngIf="form.get('especialidad')?.value === '__otra__'">
+        <label class="full">
+          <span>Agregar especialidad</span>
+          <input
+            type="text"
+            [value]="nuevaEspecialidad"
+            (input)="nuevaEspecialidad = $any($event.target).value"
+          />
+          <button type="button" class="chip-btn" (click)="agregarEspecialidad()">Agregar</button>
+        </label>
+      </div>
+    </ng-template>
+
+    <div class="row">
+      <label>
+        <span>Mail</span>
+        <input formControlName="email" type="email" />
+        <small *ngIf="invalid('email')">Email inválido.</small>
+      </label>
+      <label>
+        <span>Contraseña</span>
+        <input formControlName="password" type="password" />
+        <small *ngIf="invalid('password')">Mínimo 8, letras y números.</small>
+      </label>
+    </div>
+
+    <ng-container *ngIf="tipo === 'paciente'; else imgEspecialista">
+      <div class="row">
+        <label>
+          <span>Imagen de perfil 1</span>
+          <input type="file" (change)="setFile($event, 'foto1')" accept="image/*" />
+          <small *ngIf="invalid('foto1')">Obligatoria.</small>
+        </label>
+        <label>
+          <span>Imagen de perfil 2</span>
+          <input type="file" (change)="setFile($event, 'foto2')" accept="image/*" />
+          <small *ngIf="invalid('foto2')">Obligatoria.</small>
+        </label>
+      </div>
+    </ng-container>
+    <ng-template #imgEspecialista>
+      <label>
+        <span>Imagen de perfil</span>
+        <input type="file" (change)="setFile($event, 'foto')" accept="image/*" />
+        <small *ngIf="invalid('foto')">Obligatoria.</small>
+      </label>
+    </ng-template>
+
+    <div class="actions">
+      <button class="btn" type="submit" [disabled]="form.invalid || loading">
+        <span class="spinner" *ngIf="loading" aria-hidden="true"></span>
+        {{ loading ? 'Creando…' : 'Crear cuenta' }}
+      </button>
+      <button class="btn-secondary" type="button" (click)="volver.emit()">Volver</button>
+    </div>
+
+    <div class="helper">
+      <span>¿Ya tiene cuenta?</span>
+      <button type="button" class="link" (click)="ingresar.emit()">Ingresar</button>
+    </div>
+  </form>
+</div>
