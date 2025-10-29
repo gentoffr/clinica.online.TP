@@ -86,16 +86,33 @@ export class Register{
   setTipo(t: 'paciente'|'especialista'){ this.tipo = t; this.form.get('tipo')!.setValue(t); this.syncTipo(t); }
 
   private syncTipo(t: 'paciente'|'especialista'){
-    ['foto1','foto2','foto'].forEach(c=> this.form.get(c)?.clearValidators());
+    const cFoto1 = this.form.get('foto1')!;
+    const cFoto2 = this.form.get('foto2')!;
+    const cFoto = this.form.get('foto')!;
+    const cEsp = this.form.get('especialidad')!;
+
+    // Reset validators for all involved controls first
+    [cFoto1, cFoto2, cFoto, cEsp].forEach(c => c.clearValidators());
+
+    // Apply role-specific validators
     if(t==='paciente'){
-      this.form.get('especialidad')!.clearValidators();
-      this.form.get('foto1')!.setValidators([Validators.required]);
-      this.form.get('foto2')!.setValidators([Validators.required]);
+      cFoto1.setValidators([Validators.required]);
+      cFoto2.setValidators([Validators.required]);
+      // Clean up unused fields for this role
+      cFoto.setValue(null);
+      cEsp.setValidators([]); // ensure optional
     } else {
-      this.form.get('especialidad')!.setValidators([Validators.required]);
-      this.form.get('foto')!.setValidators([Validators.required]);
+      cEsp.setValidators([Validators.required]);
+      cFoto.setValidators([Validators.required]);
+      // Clean up unused fields for this role
+      cFoto1.setValue(null);
+      cFoto2.setValue(null);
     }
-    this.form.updateValueAndValidity();
+
+    // Recalculate validity of touched controls explicitly
+    [cFoto1, cFoto2, cFoto, cEsp].forEach(c => c.updateValueAndValidity({ emitEvent: false }));
+    // Finally update the form group state
+    this.form.updateValueAndValidity({ emitEvent: false });
   }
 
   agregarEspecialidad(){
@@ -138,6 +155,7 @@ export class Register{
     }
     this.loading = true;
     const raw = this.form.getRawValue();
+    console.log('[Register] Form raw value', raw);
     const payload: any = {
       tipo: this.tipo,
       nombre: raw.nombre,
@@ -148,12 +166,16 @@ export class Register{
       password: raw.password,
     };
     if(this.tipo==='paciente'){
-      payload.obra_social = raw.obraSocial || null;
+      if(raw.obraSocial === null|| raw.obraSocial.trim() === ''){
+        raw.obraSocial = 'No tiene';
+      }
+      payload.obra_social = raw.obraSocial || "No tiene";
       payload.fotos = [raw.foto1, raw.foto2];
     } else {
       payload.especialidad = raw.especialidad;
       payload.fotos = raw.foto ? [raw.foto] : [];
     }
+    console.log('[Register] Payload (raw)', payload);
     const safePayload = {
       ...payload,
       password: '***',
@@ -164,7 +186,7 @@ export class Register{
     try{
       console.log('[Register] Calling authService.register');
       const res = await this.authService.register(payload);
-      console.log('[Register] Register success', res);
+      console.log('[Register] Register success');
       this.toastService.success('Registro exitoso. Por favor, confirma tu email.');
     }
     catch(err){

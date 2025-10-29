@@ -1,0 +1,83 @@
+<!-- home-administrador.component.html -->
+<div class="layout" [class.menu-collapsed]="menuCollapsed">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="perfil">
+      <div class="avatar-wrap">
+        <span class="spinner" *ngIf="avatarCargando"></span>
+        <img
+          *ngIf="!avatarCargando"
+          class="avatar"
+          [src]="user.imagen_perfil[0]"
+          alt="Avatar administrador"
+        />
+      </div>
+      <div class="perfil-info">
+        <h3 class="perfil-nombre" title="{{ user.nombre }}">{{ user.nombre }}</h3>
+        <p class="perfil-email" title="{{ user.email }}">{{ user.email }}</p>
+      </div>
+    </div>
+
+    <nav class="menu">
+      <h4 class="menu-title">Acciones</h4>
+      <ul>
+        <li class="menu-item active">
+          <span class="bullet"></span><span class="label">Dashboard</span>
+        </li>
+        <li class="menu-item"><span class="bullet"></span><span class="label">Usuarios</span></li>
+        <li class="menu-item"><span class="bullet"></span><span class="label">Pedidos</span></li>
+        <li class="menu-item"><span class="bullet"></span><span class="label">Productos</span></li>
+        <li class="menu-item"><span class="bullet"></span><span class="label">Reportes</span></li>
+        <li class="menu-item">
+          <span class="bullet"></span><span class="label">Configuración</span>
+        </li>
+        
+        <footer><li class="menu-item" (click)="cerrarSesion()"><span class="bullet"></span><span class="label">Cerrar sesión</span></li></footer>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Topbar (debe ser hijo directo de .layout para respetar grid-area) -->
+  <header class="topbar">
+    <button class="icon-btn" (click)="toggleMenu()" aria-label="Alternar menú">
+      <span class="hamburger"></span>
+    </button>
+
+    <div class="topbar-center">
+      <div class="placeholder pill skeleton" style="width: 220px; height: 36px"></div>
+      <div class="placeholder pill skeleton hide-sm" style="width: 140px; height: 36px"></div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="placeholder circle skeleton" aria-hidden="true"></div>
+      <div class="placeholder circle skeleton" aria-hidden="true"></div>
+      <div class="mini-perfil">
+        <img class="mini-avatar" [src]="user.imagen_perfil[1]" alt="Avatar mini" />
+        <span class="hide-sm ellipsis">{{ user.nombre }}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+    <section class="content">
+      <!-- Paneles perfectamente alineados en una grilla uniforme -->
+      <div class="panels">
+        <section class="panel">
+          <h4>Listado de usuarios</h4>
+          <div class="listado">
+            <app-listado-usuarios></app-listado-usuarios>
+          </div>
+        </section>
+        <section class="panel" [class.expandido]="sacandoTurno">
+          <h4>Accion rapida</h4>
+          <app-registro-turno
+            [requiereEmailPaciente]="true"
+            (submitTurno)="onTurno($event)"
+            (openedChange)="onSacarTurnoOpen($event)"
+          ></app-registro-turno>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>

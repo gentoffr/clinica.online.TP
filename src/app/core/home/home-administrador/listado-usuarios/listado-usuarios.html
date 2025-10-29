@@ -1,0 +1,99 @@
+<!-- listado-usuarios.component.html -->
+<div class="listado-wrapper">
+  <!-- Spinner -->
+  <div *ngIf="cargando" class="loading-block">
+    <div class="spinner"></div>
+    <p>Cargando usuarios…</p>
+
+    <!-- Skeletons -->
+    <div class="grid">
+      <div class="card skeleton" *ngFor="let s of [0,1,2,3,4,5]">
+        <div class="avatar sk"></div>
+        <div class="info">
+          <div class="line sk"></div>
+          <div class="line sk short"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!cargando && error" class="estado estado--error">
+    <span class="estado__icon">!</span>
+    <div>
+      <h4>Error</h4>
+      <p>{{ error }}</p>
+    </div>
+  </div>
+
+  <!-- Vacío -->
+  <div *ngIf="!cargando && !error && usuarios.length === 0" class="estado">
+    <span class="estado__icon">∅</span>
+    <div>
+      <h4>Sin usuarios</h4>
+      <p>No se encontraron registros</p>
+    </div>
+  </div>
+
+  <!-- Listado -->
+  <div *ngIf="!cargando && !error && usuarios.length" class="grid">
+    <article class="card is-clickable" *ngFor="let u of usuarios; trackBy: trackById" (click)="abrirModal(u)" aria-role="button">
+      <div class="avatar">
+        <img *ngIf="u.imagen_perfil[0]; else inicial" [src]="u.imagen_perfil[0]" [alt]="u.nombre || 'Usuario'">
+      </div>
+      <ng-template #inicial>
+        <div class="avatar avatar--placeholder">
+          {{ (u.nombre ?? u.email ?? '?').charAt(0).toUpperCase() }}
+        </div>
+      </ng-template>
+
+      <div class="info">
+        <h3 class="nombre">{{ u.nombre }} {{ u.apellido }}</h3>
+        <p class="email">{{ u.email }}</p>
+        <p class="email">Rol: {{ u.rol }}</p>
+      </div>
+    </article>
+  </div>
+
+  <!-- Modal Detalle Usuario -->
+  <div *ngIf="modalAbierto" class="modal-backdrop" (click)="cerrarModal()" tabindex="0" (keydown.escape)="cerrarModal()">
+    <article class="modal" (click)="$event.stopPropagation()">
+      <button class="modal__close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+
+      <header class="modal__header">
+        <div class="avatar avatar--lg">
+          <img *ngIf="seleccionado?.imagen_perfil && seleccionado.imagen_perfil[0]; else inicialModal" [src]="seleccionado.imagen_perfil[0]" [alt]="seleccionado?.nombre || 'Usuario'">
+        </div>
+        <ng-template #inicialModal>
+          <div class="avatar avatar--lg avatar--placeholder">
+            {{ (seleccionado?.nombre ?? seleccionado?.email ?? '?').charAt(0).toUpperCase() }}
+          </div>
+        </ng-template>
+
+        <div class="header__info">
+          <h2>{{ seleccionado?.nombre }} {{ seleccionado?.apellido }}</h2>
+          <p class="muted">{{ seleccionado?.email }}</p>
+        </div>
+      </header>
+
+      <section class="modal__body">
+        <div class="row">
+          <div class="label">Rol</div>
+          <div class="value">{{ seleccionado?.rol }}</div>
+        </div>       
+        <div class="row" *ngIf="seleccionado?.dni">
+          <div class="label">Documento</div>
+          <div class="value">{{ seleccionado?.dni }}</div>
+        </div>
+        <div class="row" *ngIf="seleccionado?.edad">
+          <div class="label">Edad</div>
+          <div class="value">{{ seleccionado?.edad }}</div>
+        </div>
+        <div class="row" *ngIf="seleccionado?.obra_social">
+          <div class="label">Obra Social</div>
+          <div class="value">{{ seleccionado?.obra_social }}</div>
+        </div>
+      </section>
+    </article>
+  </div>
+</div>

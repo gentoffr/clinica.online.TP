@@ -1,0 +1,198 @@
+<!-- src/app/registro-turno/registro-turno.component.html -->
+<div class="accion-rapida">
+  <button class="btn-primario" type="button" (click)="toggle()">
+    {{ abierto() ? 'Cancelar' : 'Sacar turno' }}
+  </button>
+
+  <div class="wizard" *ngIf="abierto()">
+    <div class="track" [style.transform]="'translateX(' + (-33 * (paso() - 1)) + '%)'"><!-- 0, -100, -200 -->
+    <!-- Paso 1 -->
+    <section class="paso slide" [formGroup]="formPaso1">
+      <h3>Seleccionar especialidad y especialista</h3>
+
+      <div class="field">
+        <span>Especialidad</span>
+        <div class="seleccion-compacta">
+          <div class="badge" *ngIf="formPaso1.value.especialidad else sinEsp">
+            {{ formPaso1.value.especialidad }}
+          </div>
+          <ng-template #sinEsp><div class="badge muted">Sin seleccionar</div></ng-template>
+
+          <button type="button" class="btn" (click)="abrirModalEspecialidades()">
+            Ver especialidades
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span>Especialista</span>
+        <div class="seleccion-compacta">
+          <div class="badge" *ngIf="formPaso1.value.especialista; else sinMed">
+            {{ formPaso1.value.especialista }}
+          </div>
+          <ng-template #sinMed><div class="badge muted">Sin seleccionar</div></ng-template>
+
+          <button
+            type="button"
+            class="btn"
+            [disabled]="!formPaso1.value.especialidad"
+            (click)="abrirModalEspecialistas()">
+            Ver especialistas
+          </button>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button
+          class="btn-primario"
+          type="button"
+          [disabled]="!formPaso1.valid"
+          (click)="siguiente()">
+          Siguiente
+        </button>
+      </div>
+    </section>
+
+    <!-- Paso 2 -->
+    <section class="paso slide" [formGroup]="formPaso2">
+      <h3>Elegir fecha y hora</h3>
+
+      <!-- Email del paciente (solo admin) -->
+      <div class="field" *ngIf="requiereEmailPaciente">
+        <label class="label" for="emailPaciente">Email del paciente</label>
+        <input
+          id="emailPaciente"
+          type="email"
+          class="input"
+          formControlName="emailPaciente" 
+          placeholder="paciente@correo.com"
+          autocomplete="email"
+        />
+        <div class="error" *ngIf="formPaso2.get('emailPaciente')?.touched && formPaso2.get('emailPaciente')?.invalid">
+          Ingrese un email válido.
+        </div>
+      </div>
+      <div class="field">
+        <span>Turno seleccionado</span>
+        <div class="seleccion-compacta">
+          <div class="badge" *ngIf="formPaso2.value.fecha && formPaso2.value.hora; else sinSel">
+            {{ formPaso2.value.fecha }} · {{ formPaso2.value.hora }}
+          </div>
+          <ng-template #sinSel><div class="badge muted">Sin seleccionar</div></ng-template>
+          <button type="button" class="btn" (click)="abrirModalTurnos()">Elegir turno</button>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button class="btn" type="button" (click)="atras()">Atrás</button>
+        <button class="btn-primario" type="button" [disabled]="!formPaso2.valid" (click)="siguiente()">
+          Siguiente
+        </button>
+      </div>
+    </section>
+
+    <!-- Paso 3 -->
+    <section class="paso slide">
+      <h3>Confirmación</h3>
+      <ul class="resumen">
+        <li><strong>Especialidad:</strong> {{ (formPaso1.value.especialidad) || '—' }}</li>
+        <li><strong>Especialista:</strong> {{ (formPaso1.value.especialista) || '—' }}</li>
+        <li><strong>Fecha:</strong> {{ formPaso2.value.fecha || '—' }}</li>
+        <li><strong>Hora:</strong> {{ formPaso2.value.hora || '—' }}</li>
+        <li><strong>Email paciente:</strong> {{ formPaso2.value.emailPaciente || '—' }}</li>
+      </ul>
+
+      <!-- Campo extra solo para host-administrador -->
+
+      <div class="acciones">
+        <button class="btn" type="button" (click)="atras()">Atrás</button>
+        <button class="btn-primario" type="button" [disabled]="!formPaso2.valid || loading" (click)="enviar()">  <span class="spinner-inline" *ngIf="loading"></span><span *ngIf="!loading">Enviar</span><span *ngIf="loading">Enviando�</span></button>
+      </div>
+    </section>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ESPECIALIDADES -->
+<div class="modal-backdrop" *ngIf="modalEspAbierto" (click)="cerrarModalEspecialidades()"></div>
+<div class="modal" *ngIf="modalEspAbierto" role="dialog" aria-modal="true" aria-label="Seleccionar especialidad">
+  <header class="modal-header">
+    <h4>Especialidades</h4>
+    <button type="button" class="icon-btn" (click)="cerrarModalEspecialidades()" aria-label="Cerrar">✕</button>
+  </header>
+  <div class="modal-body modal-body--simple">
+    <div class="chips">
+      <button
+        *ngFor="let e of especialidades"
+        type="button"
+        class="chip"
+        [class.activa]="formPaso1.value.especialidad === e.especialidad"
+        (click)="seleccionarEspecialidad(e.especialidad)">
+        {{ e.especialidad }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ESPECIALISTAS -->
+<div class="modal-backdrop" *ngIf="modalMedAbierto" (click)="cerrarModalEspecialistas()"></div>
+<div class="modal" *ngIf="modalMedAbierto" role="dialog" aria-modal="true" aria-label="Seleccionar especialista">
+  <header class="modal-header">
+    <h4>Especialistas</h4>
+    <button type="button" class="icon-btn" (click)="cerrarModalEspecialistas()" aria-label="Cerrar">✕</button>
+  </header>
+  <div class="modal-body modal-body--simple">
+    <div class="chips lista-especialistas">
+      <div class="med-item" *ngFor="let m of especialistasFiltrados">
+        <img class="med-avatar" [src]="m.imagen_perfil?.[0]" alt="{{ m.nombre }} {{ m.apellido }}" width="200" height="200" loading="lazy" decoding="async" />
+        <div class="med-info">
+          <div class="med-name">Nombre: {{ m.nombre }} {{ m.apellido }}</div>
+          <br>
+          <div class="med-meta">Edad: {{ m.edad }} años</div>
+          <h4>Especialidad: {{ m.especialidad }}</h4>
+        </div>
+        <button
+          type="button"
+          class="chip"
+          [class.activa]="formPaso1.value.especialista === m.nombre"
+          (click)="seleccionarEspecialista(m)">
+          Seleccionar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TURNOS (15 días) -->
+<div class="modal-backdrop" *ngIf="modalTurnosAbierto" (click)="cerrarModalTurnos()"></div>
+<div class="modal" *ngIf="modalTurnosAbierto" role="dialog" aria-modal="true" aria-label="Selector de turnos">
+  <header class="modal-header">
+    <h4>Disponibilidad próximos 15 días</h4>
+    <button type="button" class="icon-btn" (click)="cerrarModalTurnos()" aria-label="Cerrar">✕</button>
+  </header>
+
+  <div class="modal-body">
+    <aside class="dias">
+      <button
+        *ngFor="let d of dias; index as i"
+        type="button"
+        class="dia"
+        [class.activo]="i === idxActivo"
+        (click)="seleccionarDia(i)">
+        <span class="dia-corto">{{ d.corto }}</span>
+        <span class="dia-largo">{{ d.etiqueta }}</span>
+      </button>
+    </aside>
+
+    <section class="slots">
+      <div class="slots-grid" *ngIf="slotsActivos.length; else sinSlots">
+        <button *ngFor="let h of slotsActivos" type="button" class="slot" (click)="seleccionarHora(h)">
+          {{ h }}
+        </button>
+      </div>
+      <ng-template #sinSlots>
+        <div class="sin-slots">Sin disponibilidad para este día</div>
+      </ng-template>
+    </section>
+  </div>
+</div>

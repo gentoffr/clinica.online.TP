@@ -1,7 +1,23 @@
-import { Injectable } from '@angular/core';
+import { Injectable, DestroyRef, inject } from '@angular/core';
+import { BehaviorSubject, from, of } from 'rxjs';
+import { catchError, map, switchMap, distinctUntilChanged } from 'rxjs/operators';
 import { supabase } from './supabase.client';
 import { StorageService } from './storage.service';
 import { ToastService } from './toast.service';
+
+/** Estructura real de public.profiles (incluye email persistido) */
+export type Profile = {
+  id: string;
+  nombre: string | null;
+  apellido: string | null;
+  email: string | null;
+  edad: number | null;
+  dni: string | null;
+  obra_social?: string | null;
+  especialidad?: string | null;
+  imagen_perfil?: string[] | null;
+  admin?: boolean | null;
+};
 
 type CommonFields = {
   email: string;
@@ -28,125 +44,177 @@ export type RegisterInput = RegisterPacienteInput | RegisterEspecialistaInput;
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  constructor(private storage: StorageService, private toast: ToastService) {}
+  private _profile$ = new BehaviorSubject<Profile | null>(null);
+  readonly user$ = this._profile$.asObservable();
 
-  // Iniciar sesión con email y password
+  get user(): Profile | null { return this._profile$.value; }
+
+  private profilesChannel: ReturnType<typeof supabase.channel> | null = null;
+
+  constructor(
+    private storage: StorageService,
+    private toast: ToastService
+  ) {
+    const destroyRef = inject(DestroyRef);
+
+    from(supabase.auth.getSession())
+      .pipe(
+        map(({ data }) => data.session?.user?.id ?? null),
+        switchMap((uid) => (uid ? this.fetchProfile(uid) : of(null))),
+        catchError(() => of(null))
+      )
+      .subscribe(p => this._profile$.next(p));
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null;
+      if (!uid) {
+        this._profile$.next(null);
+        this.teardownProfilesChannel();
+        return;
+      }
+      this.fetchProfile(uid).subscribe(p => {
+        this._profile$.next(p);
+        this.setupProfilesChannel(uid);
+      });
+    });
+  }
+
   async login(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      this.toast.error(error.message || 'Error al iniciar sesión');
-      throw error;
-    }
-    this.toast.success('Sesión iniciada');
-    return data;
+    if (error) throw error;
+    const uid = data.user?.id;
+    if (uid) this.fetchProfile(uid).subscribe(p => this._profile$.next(p));
+    const retorno = this._selectProfile(uid!);
+    return retorno;
   }
 
   async logout() {
     await supabase.auth.signOut();
+    this.teardownProfilesChannel();
+    this._profile$.next(null);
   }
 
   async currentUser() {
-    const { data } = await supabase.auth.getUser();
-    return data.user ?? null;
+    const { data: authData } = await supabase.auth.getUser();
+    const uid = authData.user?.id;
+    if (!uid) return null;
+    const p = await this._selectProfile(uid);
+    return p ?? null;
   }
 
-  private fileInfo(f: File | null) {
-    return f ? { name: f.name, size: f.size, type: f.type } : null;
-  }
-
-  // Registro discriminado por tipo
   async register(input: RegisterInput) {
-    console.log('[AuthService.register] start', { tipo: input.tipo, email: input.email });
     const { email, password } = input;
-    console.log("Payload ", input);
-    // 1) Crear usuario de auth
-    console.log('[AuthService.register] signing up user');
-    const { data: sign, error: signErr } = await supabase.auth.signUp({ email, password });
+
+    const { data: sign, error: signErr } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: 'https://clinica-f94d0.web.app/inicio' },
+    });
     if (signErr) {
-      console.error('[AuthService.register] signUp error', signErr);
       this.toast.error(signErr.message || 'No se pudo crear el usuario');
       throw signErr;
     }
-    console.log('[AuthService.register] signUp ok', { hasUser: !!sign.user, userId: sign.user?.id });
 
-    const userId = sign.user?.id;
-    if (!userId) {
-      // Puede ocurrir si hay confirmación por email; intentamos recuperar el usuario actual.
-      console.log('[AuthService.register] userId missing after signUp, fetching current user');
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) {
-        const err = new Error('Usuario no disponible tras el registro');
-        console.error('[AuthService.register] getUser returned null user');
-        this.toast.error(err.message);
-        throw err;
-      }
-
-      // eslint-disable-next-line prefer-const
-      // @ts-ignore - maintain for clarity
-      userId;
+    const uid = sign.user?.id ?? (await supabase.auth.getUser()).data.user?.id;
+    if (!uid) {
+      const err = new Error('Usuario no disponible tras el registro');
+      this.toast.error(err.message);
+      throw err;
     }
 
-    const id = userId || (await supabase.auth.getUser()).data.user!.id;
-    console.log('[AuthService.register] resolved user id', { id });
-
-    // 2) Subir imágenes (hasta 2) y guardar paths
     const imagenes_perfil_paths: string[] = [];
     try {
-      const fotosIn = (input.fotos ?? []).filter(f => !!f) as File[];
+      const fotosIn = (input.fotos ?? []).filter(Boolean) as File[];
       const legacy: (File | null | undefined)[] =
         input.tipo === 'paciente'
           ? [(input as any).foto1, (input as any).foto2]
           : [(input as any).foto];
-      const all = [...fotosIn, ...legacy.filter(Boolean) as File[]];
-      const toUpload = all.slice(0, 2);
-      console.log('[AuthService.register] uploading images', {
-        count: toUpload.length,
-        files: toUpload.map(f => this.fileInfo(f)),
-      });
+      const toUpload = [...fotosIn, ...(legacy.filter(Boolean) as File[])].slice(0, 2);
+
       for (let i = 0; i < toUpload.length; i++) {
-        const f = toUpload[i];
-        const up = await this.storage.uploadProfileImage(f, id, `perfil${i + 1}`);
-        console.log('[AuthService.register] upload ok', { index: i, path: up.path });
-        imagenes_perfil_paths.push(up.path);
+        const up = await this.storage.uploadProfileImage(toUpload[i], uid, `perfil${i + 1}`);
+        imagenes_perfil_paths.push(up.url);
       }
     } catch (e: any) {
-      console.error('[AuthService.register] image upload error', e);
       this.toast.error(e?.message || 'No se pudo subir la imagen');
-      // Continuamos: el perfil puede crearse sin imagen
     }
 
-    // 3) Insertar perfil en tabla `profiles`
-    const base = {
-      id,
-      nombre: input.nombre,
-      apellido: input.apellido,
-      edad: input.edad,
-      dni: input.dni,
+    // Insert directo en profiles incluyendo email persistido
+    const base: Profile & { id: string } = {
+      id: uid,
+      email: input.email, // ahora persistido en public.profiles
+      nombre: input.nombre ?? null,
+      apellido: input.apellido ?? null,
+      edad: input.edad ?? null,
+      dni: input.dni ?? null,
       imagen_perfil: imagenes_perfil_paths,
-    } as any;
+      obra_social: input.tipo === 'paciente' ? (input.obra_social ?? null) : undefined,
+      especialidad: input.tipo === 'especialista' ? input.especialidad : undefined,
+    };
 
-    if (input.tipo === 'paciente') {
-      base.obra_social = input.obra_social ?? null;
-    } else {
-      base.especialidad = input.especialidad;
-    }
-
-    console.log('[AuthService.register] inserting profile', { id, nombre: input.nombre, apellido: input.apellido, edad: input.edad, dni: '***', imagenes_perfil: imagenes_perfil_paths, tipo: input.tipo, obra_social: (input as any).obra_social, especialidad: (input as any).especialidad });
     const { data: prof, error: profErr } = await supabase
       .from('profiles')
       .insert([base])
-      .select('*')
+      .select('id, email, nombre, apellido, edad, dni, obra_social, especialidad, imagen_perfil')
       .single();
 
     if (profErr) {
-      console.error('[AuthService.register] profile insert error', profErr);
       this.toast.error(profErr.message || 'No se pudo crear el perfil');
       throw profErr;
     }
 
-    console.log('[AuthService.register] profile insert ok', { profileId: prof?.id, userId: id });
+    const {data, error} = await supabase.from('especialidades')
+    .insert({ especialidad: input.tipo === 'especialista' ? input.especialidad : null });
+    if (error) {
+      console.error('Error al insertar especialidad:', error);
+    }
+
+    this._profile$.next(prof as Profile);
+    this.setupProfilesChannel(uid);
+
     this.toast.success('Registro completado');
-    console.log('[AuthService.register] end');
-    return prof;
+    return prof as Profile;
+  }
+
+  private fetchProfile(uid: string) {
+    return from(this._selectProfile(uid)).pipe(
+      catchError(() => of(null)),
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
+    );
+  }
+
+  private async _selectProfile(uid: string): Promise<Profile | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, nombre, apellido, edad, dni, obra_social, especialidad, imagen_perfil, admin')
+      .eq('id', uid)
+      .single();
+    console.log('[AuthService] _selectProfile', { uid, data, error });
+    if (error) return null;
+    return data as Profile;
+  }
+
+  private setupProfilesChannel(uid: string) {
+    this.teardownProfilesChannel();
+    this.profilesChannel = supabase
+      .channel(`profiles-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` },
+        (payload: any) => {
+          const next = (payload.new ?? payload.old) as Profile | undefined;
+          if (!next) return;
+          const curr = this._profile$.value;
+          if (JSON.stringify(curr) !== JSON.stringify(next)) this._profile$.next(next);
+        }
+      )
+      .subscribe();
+  }
+
+  private teardownProfilesChannel() {
+    if (this.profilesChannel) {
+      supabase.removeChannel(this.profilesChannel);
+      this.profilesChannel = null;
+    }
   }
 }

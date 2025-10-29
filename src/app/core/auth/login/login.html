@@ -1,5 +1,5 @@
 <div class="content">
-  <form class="form" (ngSubmit)="login()" autocomplete="on">
+  <form class="form" #f="ngForm" (ngSubmit)="loginSubmit(f)" autocomplete="on">
     <div class="icon-strip">
       <span class="material-symbols-outlined icono"
             style="background-color: rgb(250, 83, 83)"
@@ -48,15 +48,20 @@
     <h2>Iniciar sesión</h2>
     <label>
       <span>Usuario</span>
-      <input type="text" [(ngModel)]="usuario" name="usuario" required />
+      <input type="text" [(ngModel)]="usuario" name="usuario" required [class.invalid]="submitted && !usuario" [disabled]="loading" />
+      <small class="error" *ngIf="submitted && !usuario">Usuario es requerido</small>
+      <small class="error" *ngIf="submitted && !password">Contraseña es requerida</small>
     </label>
     <label>
       <span>Contraseña</span>
-      <input type="password" [(ngModel)]="password" name="password" required />
+      <input type="password" [(ngModel)]="password" name="password" required [class.invalid]="submitted && !password" [disabled]="loading" />
     </label>
     <div class="actions">
-      <button type="submit" class="btn">Entrar</button>
-      <button type="button" class="btn-secondary" (click)="volver.emit()">Volver</button>
+      <button type="submit" class="btn" [disabled]="loading || !usuario || !password">
+        <span class="spinner" *ngIf="loading" aria-hidden="true"></span>
+        <span>{{ loading ? 'Entrando…' : 'Entrar' }}</span>
+      </button>
+      <button type="button" class="btn-secondary" (click)="volver.emit()" [disabled]="loading">Volver</button>
     </div>
     <div class="hint">
       ¿Sin cuenta? <button type="button" class="link" (click)="registrar.emit()">Crear una</button>
