@@ -4,7 +4,13 @@
   <aside class="sidebar">
     <div class="perfil">
       <div class="avatar-wrap">
-        <img class="avatar" [src]="user.imagen_perfil[0]" alt="Avatar administrador" />
+        <span class="spinner" *ngIf="avatarCargando"></span>
+        <img
+          *ngIf="!avatarCargando"
+          class="avatar"
+          [src]="user.imagen_perfil[0]"
+          alt="Avatar administrador"
+        />
       </div>
       <div class="perfil-info">
         <h3 class="perfil-nombre" title="{{ user.nombre }}">{{ user.nombre }}</h3>
@@ -19,12 +25,14 @@
           <span class="bullet"></span><span class="label">Dashboard</span>
         </li>
         <li class="menu-item"><span class="bullet"></span><span class="label">Usuarios</span></li>
-        <li class="menu-item"><span class="bullet"></span><span class="label">Pedidos</span></li>
+        <li class="menu-item"><span class="bullet"></span><span class="label">Turnos</span></li>
         <li class="menu-item"><span class="bullet"></span><span class="label">Productos</span></li>
         <li class="menu-item"><span class="bullet"></span><span class="label">Reportes</span></li>
         <li class="menu-item">
           <span class="bullet"></span><span class="label">Configuración</span>
         </li>
+        
+        <footer><li class="menu-item" (click)="cerrarSesion()"><span class="bullet"></span><span class="label">Cerrar sesión</span></li></footer>
       </ul>
     </nav>
   </aside>
@@ -55,15 +63,17 @@
     <section class="content">
       <!-- Paneles perfectamente alineados en una grilla uniforme -->
       <div class="panels">
-        <section class="panel">
-          <h4>Listado de turnos</h4>
-          <div class="listado">
-          </div>
+        <section class="panel" [class.expandido]="sacandoTurno">
+          <h4>Accion rapida</h4>
+          <app-registro-turno
+            [requiereEmailPaciente]="false"
+            (submitTurno)="onTurno($event)"
+            (openedChange)="onSacarTurnoOpen($event)"
+          ></app-registro-turno>
         </section>
         <section class="panel">
-          <h4>Solicitar turno</h4>
-          <div class="skeleton block btn"></div>
-          <div class="skeleton block btn short"></div>
+          <h4>Mis turnos</h4>
+          <app-listado-turnos></app-listado-turnos>
         </section>
       </div>
     </section>

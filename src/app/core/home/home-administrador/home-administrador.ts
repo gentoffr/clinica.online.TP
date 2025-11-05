@@ -104,6 +104,7 @@ export class HomeAdministrador implements OnInit {
         id_paciente,
         id_especialista,
         fecha_turno,
+        especialidad: payload.especialidad,
       });
 
       if (!creado) {

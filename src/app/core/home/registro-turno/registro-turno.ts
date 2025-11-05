@@ -158,6 +158,7 @@ export class RegistroTurno implements OnInit {
     if (this.requiereEmailPaciente) {
       payload.emailPaciente = this.formPaso2.value.emailPaciente;
     }
+    
     this.submitTurno.emit(payload);
   }
 

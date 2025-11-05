@@ -28,12 +28,10 @@ export class UsuarioService {
   }
   async obtenerTodosLosUsuarios() {
     const { data, error } = await supabase.from('profiles').select('*');
-
     if (error) {
       console.error('Error al obtener todos los usuarios:', error);
       return [];
     }
-
     return data;
   }
   async obtenerTodosLosEspecialistas() {
@@ -64,5 +62,5 @@ export class UsuarioService {
     if (error) throw error;
     return data;
   }
-  
+
 }

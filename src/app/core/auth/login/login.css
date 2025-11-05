@@ -84,22 +84,49 @@ input.invalid {
   text-decoration: underline;
 }
 .icono{
-  font-size: 2.5rem;
-  position: relative;
+  font-size: 0; /* hide button text if any */
   margin: 10px;
   bottom: 30px;
-  padding: 10px;
+  width: 84px;
+  height: 84px;
+  padding: 0;
   border-radius: 50%;
+  border: none;
+  overflow: auto;
+  background-color: transparent;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, outline-color 0.15s ease;
 }
+
+/* Bordes por rol */
+.icono.role-admin { border: 3px solid #ef4444; }
+.icono.role-especialista { border: 3px solid #facc15; }
+.icono.role-paciente { border: 3px solid #5eead4; }
+.icon-strip-wrapper{
+  position: absolute;
+  transform: translate(-17%,-80%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .icon-strip{
   display: flex;
-  justify-content: center;
-  position: absolute;
-
-  transform: translate(-13%,-65%);
+  justify-content: flex-start;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  max-width: 80vw;
+  padding: 2px;
 }
+
+/* Hide scrollbars (WebKit) */
+.icon-strip::-webkit-scrollbar { height: 6px; }
+.icon-strip::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 9999px; }
+.icon-strip::-webkit-scrollbar-track { background: transparent; }
 
 .icono:hover{
   transform: translateY(-2px) scale(1.06);
@@ -113,6 +140,25 @@ input.invalid {
 .icono:focus-visible{
   outline: 2px solid #3b82f6;
   outline-offset: 3px;
+}
+
+.icono-img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .error {
@@ -163,3 +209,22 @@ input.invalid {
 .legend-red { background: #ef4444; }
 .legend-yellow { background: #facc15; }
 .legend-teal { background: #5eead4; }
+
+.scroll-btn{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(17, 24, 39, 0.08);
+  color: rgba(17,24,39,0.8);
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.scroll-btn:hover{
+  background: rgba(17, 24, 39, 0.12);
+}

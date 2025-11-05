@@ -1,32 +1,62 @@
-import { Component, EventEmitter, output, Output, } from '@angular/core';
+import { Component, EventEmitter, OnInit, output, Output, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgForm } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { Toast, ToastService } from '../../../services/toast.service';
 import { Router } from '@angular/router';
+import { cuentas } from '../../../../../environments/environtment';
+import { UsuarioService } from '../../../services/usuario.service';
 @Component({
   selector: 'app-login',
   imports: [FormsModule, CommonModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class Login {
+export class Login implements OnInit {
   @Output() volver = new EventEmitter<void>();
   @Output() registrar = new EventEmitter<void>();
+  @ViewChild('strip') strip?: ElementRef<HTMLDivElement>;
   usuario = '';
   password = '';
   selectedIcon: number | null = null;
   loading = false;
   submitted = false;
-  constructor(private authService: AuthService, private toast: ToastService, private router: Router) {}
-
+  usuarios: any[] = [];
+  getFoto(u: any) {
+    return (
+      (u?.imagen_perfil && u.imagen_perfil[0]) ||
+      (u?.foto && u.foto[0]) ||
+      u?.foto_url ||
+      'assets/user.png'
+    );
+  }
+  constructor(
+    private authService: AuthService,
+    private toast: ToastService,
+    private router: Router,
+    private usuarioService: UsuarioService
+  ) {}
+  async ngOnInit() {
+    this.usuarios = await this.usuarioService.obtenerTodosLosUsuarios();
+    console.log(this.usuarios);
+  }
   selectIcon(i: number) {
     this.selectedIcon = i;
-    const demo = 'Aun no cree cuentas jaja';
-    this.usuario = demo;
-    this.password = demo;
-    console.log('[Login] icon selected', i, '-> autocompleted fields');
+    const u = this.usuarios?.[i];
+    const email = (u?.email || '').trim();
+    if (email) this.usuario = email;
+
+    const match = cuentas.find((c: any) => (c?.mail || '').toLowerCase() === email.toLowerCase());
+    this.password = match?.pass ?? '';
+    console.log('[Login] icon selected', i, 'email:', email, 'password set:', !!match);
+  }
+
+  scrollStrip(dir: number) {
+    const el = this.strip?.nativeElement;
+    if (!el) return;
+    const step = 160; // scroll amount per click
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
   }
 
   async loginSubmit(form: NgForm) {
@@ -67,14 +97,24 @@ export class Login {
 
   redireccionar(usuario: any) {
     console.log('[Login] redireccionar usuario:', usuario);
-    if (usuario.especialidad){
-      this.router.navigate(['/home-especialista']);
+    switch (this.averiguarRol(usuario)) {
+      case 'especialista':
+        this.router.navigate(['/home-especialista']);
+        break;
+      case 'paciente':
+        this.router.navigate(['/home-paciente']);
+        break;
+      case 'admin':
+        this.router.navigate(['/home-administrador']);
+        break;
     }
-    else if (usuario.obraSocial && !usuario.especialidad){
-      this.router.navigate(['/home-paciente']);
-    }
-    else if (usuario.admin) {
-      this.router.navigate(['/home-administrador']);
-    }
+  }
+
+  averiguarRol(usuario: any) {
+    if (!usuario) return 'paciente';
+    if (usuario.admin === true) return 'admin';
+    if (usuario.especialidad) return 'especialista';
+    if (usuario.obraSocial || usuario.obra_social) return 'paciente';
+    return 'paciente';
   }
 }

@@ -69,4 +69,56 @@ export class ListadoUsuarios implements OnInit {
     this.cdr.markForCheck();
   }
   
+  exportarExcel() {
+    try {
+      const headers = [
+        'id',
+        'nombre',
+        'apellido',
+        'email',
+        'edad',
+        'dni',
+        'obra_social',
+        'especialidad',
+        'admin',
+        'rol',
+        'imagen_perfil'
+      ];
+      const rows = this.usuarios.map(u => [
+        u.id ?? '',
+        u.nombre ?? '',
+        u.apellido ?? '',
+        u.email ?? '',
+        u.edad ?? '',
+        u.dni ?? '',
+        u.obra_social ?? '',
+        u.especialidad ?? '',
+        u.admin === true ? 'si' : 'no',
+        u.rol ?? '',
+        Array.isArray(u.imagen_perfil) ? u.imagen_perfil.join(' ') : (u.imagen_perfil ?? '')
+      ]);
+
+      const escape = (v: any) => {
+        const s = String(v ?? '');
+        if (s.includes('"') || s.includes(';') || s.includes('\n')) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const csv = [headers.join(';'), ...rows.map(r => r.map(escape).join(';'))].join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'usuarios.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('No se pudo exportar CSV', e);
+    }
+  }
+  
 }

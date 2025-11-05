@@ -99,14 +99,14 @@
         <li><strong>Especialista:</strong> {{ (formPaso1.value.especialista) || '—' }}</li>
         <li><strong>Fecha:</strong> {{ formPaso2.value.fecha || '—' }}</li>
         <li><strong>Hora:</strong> {{ formPaso2.value.hora || '—' }}</li>
-        <li><strong>Email paciente:</strong> {{ formPaso2.value.emailPaciente || '—' }}</li>
+        <li *ngIf="requiereEmailPaciente"><strong>Email paciente:</strong> {{ formPaso2.value.emailPaciente || '—' }}</li>
       </ul>
 
       <!-- Campo extra solo para host-administrador -->
 
       <div class="acciones">
         <button class="btn" type="button" (click)="atras()">Atrás</button>
-        <button class="btn-primario" type="button" [disabled]="!formPaso2.valid || loading" (click)="enviar()">  <span class="spinner-inline" *ngIf="loading"></span><span *ngIf="!loading">Enviar</span><span *ngIf="loading">Enviando�</span></button>
+        <button class="btn-primario" type="button" [disabled]="!formPaso2.valid || loading" (click)="enviar()">  <span class="spinner-inline" *ngIf="loading"></span><span *ngIf="!loading">Enviar</span><span *ngIf="loading">Enviando�</span></button>
       </div>
     </section>
     </div>

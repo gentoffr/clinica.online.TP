@@ -54,6 +54,29 @@
   margin-top: 12px;
 }
 
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0 4px;
+}
+
+.btn-export {
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(143,212,75,0.15), rgba(143,212,75,0.28));
+  color: #eaeaea;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.btn-export:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px -8px rgba(0,0,0,.6), 0 0 0 3px var(--ring);
+  border-color: rgb(143, 212, 75);
+}
+.btn-export:active { transform: translateY(0); }
+.btn-export:focus-visible { outline: 2px solid #8fd44b; outline-offset: 2px; }
+
 .card {
   display: grid;
   grid-template-columns: 64px 1fr;

@@ -1,48 +1,22 @@
 <div class="content">
   <form class="form" #f="ngForm" (ngSubmit)="loginSubmit(f)" autocomplete="on">
-    <div class="icon-strip">
-      <span class="material-symbols-outlined icono"
-            style="background-color: rgb(250, 83, 83)"
-            role="button" tabindex="0"
-            [class.active]="selectedIcon===0"
-            (click)="selectIcon(0)"
-            (keydown.enter)="selectIcon(0)"
-            (keydown.space)="selectIcon(0)">person</span>
-      <span class="material-symbols-outlined icono"
-            style="background-color: rgb(229, 248, 57)"
-            role="button" tabindex="0"
-            [class.active]="selectedIcon===1"
-            (click)="selectIcon(1)"
-            (keydown.enter)="selectIcon(1)"
-            (keydown.space)="selectIcon(1)">person</span>
-      <span class="material-symbols-outlined icono"
-            style="background-color: rgb(229, 248, 57)"
-            role="button" tabindex="0"
-            [class.active]="selectedIcon===2"
-            (click)="selectIcon(2)"
-            (keydown.enter)="selectIcon(2)"
-            (keydown.space)="selectIcon(2)">person</span>
-      <span class="material-symbols-outlined icono"
-            style="background-color: aquamarine"
-            role="button" tabindex="0"
-            [class.active]="selectedIcon===3"
-            (click)="selectIcon(3)"
-            (keydown.enter)="selectIcon(3)"
-            (keydown.space)="selectIcon(3)">person</span>
-      <span class="material-symbols-outlined icono"
-            style="background-color: aquamarine"
-            role="button" tabindex="0"
-            [class.active]="selectedIcon===4"
-            (click)="selectIcon(4)"
-            (keydown.enter)="selectIcon(4)"
-            (keydown.space)="selectIcon(4)">person</span>
-      <span class="material-symbols-outlined icono"
-            style="background-color: aquamarine"
-            role="button" tabindex="0"
-            [class.active]="selectedIcon===5"
-            (click)="selectIcon(5)"
-            (keydown.enter)="selectIcon(5)"
-            (keydown.space)="selectIcon(5)">person</span>
+    <div class="icon-strip-wrapper">
+      <button type="button" class="scroll-btn left" (click)="scrollStrip(-1)" aria-label="Desplazar a la izquierda">‹</button>
+      <div class="icon-strip" #strip>
+        <button
+          type="button"
+          class="icono"
+          *ngFor="let u of usuarios; let i = index"
+          [ngClass]="'role-' + averiguarRol(u)"
+          [attr.aria-label]="(u?.nombre || '') + ' ' + (u?.apellido || '')"
+          [attr.title]="(u?.nombre || '') + ' ' + (u?.apellido || '')"
+          [attr.aria-pressed]="selectedIcon===i"
+          (click)="selectIcon(i)"
+        >
+          <img class="icono-img" [src]="getFoto(u)" [alt]="(u?.nombre || 'Usuario') + ' ' + (u?.apellido || '')" />
+        </button>
+      </div>
+      <button type="button" class="scroll-btn right" (click)="scrollStrip(1)" aria-label="Desplazar a la derecha">›</button>
     </div>
     <br>
     <h2>Iniciar sesión</h2>
@@ -68,7 +42,7 @@
     </div>
     <div class="legend" aria-label="Leyenda de perfiles">
       <span class="legend-item"
-        ><span class="legend-dot legend-red"></span> Rojo: due&ntilde;o</span
+        ><span class="legend-dot legend-red"></span> Rojo: dueño</span
       >
       <span class="legend-item"
         ><span class="legend-dot legend-yellow"></span> Amarillo: especialista</span

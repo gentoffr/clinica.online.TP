@@ -35,6 +35,11 @@
     </div>
   </div>
 
+  <!-- Acciones -->
+  <div *ngIf="!cargando && !error && usuarios.length" class="acciones">
+    <button class="btn-export" (click)="exportarExcel()">Descargar planilla de datos de usuarios</button>
+  </div>
+
   <!-- Listado -->
   <div *ngIf="!cargando && !error && usuarios.length" class="grid">
     <article class="card is-clickable" *ngFor="let u of usuarios; trackBy: trackById" (click)="abrirModal(u)" aria-role="button">
