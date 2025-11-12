@@ -1,7 +1,8 @@
 // listado-usuarios.component.ts
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UsuarioService } from '../../../../services/usuario.service';
+import { UsuarioService } from '../../services/usuario.service';
+import { Pdf } from '../pdf/pdf';
 import { FormsModule } from '@angular/forms';
 type Usuario = {
   id: string;
@@ -14,12 +15,13 @@ type Usuario = {
 @Component({
   selector: 'app-listado-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Pdf],
   templateUrl: './listado-usuarios.html',
   styleUrls: ['./listado-usuarios.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListadoUsuarios implements OnInit {
+  @Output() verHistorialTurnos = new EventEmitter<any>();
   usuarios: any[] = [];
   cargando = true;
   error = '';
@@ -67,6 +69,10 @@ export class ListadoUsuarios implements OnInit {
     this.modalAbierto = false;
     this.seleccionado = null;
     this.cdr.markForCheck();
+  }
+  abrirHistorial() {
+    if (!this.seleccionado) return;
+    this.verHistorialTurnos.emit(this.seleccionado);
   }
   
   exportarExcel() {

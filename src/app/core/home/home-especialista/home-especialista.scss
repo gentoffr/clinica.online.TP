@@ -293,3 +293,108 @@
 app-listado-turnos{
     width: 92%;
 }
+
+/* ===== Reseña card styles (scoped) ===== */
+.resena-card {
+  width: 90%;
+  margin: 0 auto;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: 14px;
+}
+.texto-area{
+  width: 80%;
+}
+.resena-card .header {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 6px 2px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 10px;
+}
+.resena-card .header .muted { color: var(--muted); margin: 0; }
+
+.resena-card .wizard { display: grid; gap: 0.9rem; }
+.resena-card label { display: grid; gap: 0.4rem; }
+.resena-card textarea {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1rem;
+  resize: vertical;
+}
+.resena-card textarea::placeholder { color: rgba(231,233,234,0.55); }
+
+.resena-card .actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: end;
+}
+
+/* Override wide buttons inside panel for this card */
+.resena-card .btn,
+.resena-card .btn-secondary {
+  width: auto;
+  height: auto;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.resena-card .btn {
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  color: #fff;
+}
+.resena-card .btn[disabled] { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.2); }
+.resena-card .btn-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Slide animations via keyframes (no Angular Animations) */
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(240px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideOutDown {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(240px); }
+}
+.panel-animate {
+  animation: slideInUp 240ms ease-out;
+}
+/* Mini-turnos grid styled like listado-turnos */
+.mini-turnos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.mini-turnos .card {
+  position: relative;
+  width: 94%;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(59, 87, 31, 0.322), rgba(64, 95, 33, 0.658));
+}
+.mini-turnos .card .info { min-width: 0; }
+.mini-turnos .card .titulo { font-size: 1rem; font-weight: 600; color: #f3f3f3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-turnos .card .detalle { margin: 0; color: #e5e7eb; font-size: 0.95rem; }
+.mini-turnos .card .numero {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  background: rgba(143, 212, 75, 0.18);
+  color: #d8f7b8;
+  font-weight: 700;
+  border: 1px solid rgba(143,212,75,0.45);
+}

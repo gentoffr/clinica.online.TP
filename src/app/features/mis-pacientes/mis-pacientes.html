@@ -1,0 +1,46 @@
+<div class="mis-pacientes">
+  <header class="acciones">
+    <h4>Mis pacientes</h4>
+  </header>
+
+  <div *ngIf="cargando" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+  </div>
+
+  <div *ngIf="!cargando && error" class="estado estado--error">
+    <span class="estado__icon">!</span>
+    <div>
+      <h4>Error</h4>
+      <p>{{ error }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="!cargando && !error && !items.length" class="estado">
+    <span class="estado__icon">·</span>
+    <div>
+      <h4>Sin pacientes</h4>
+      <p>No hay historias clínicas registradas</p>
+    </div>
+  </div>
+
+  <div *ngIf="!cargando && !error && items.length" class="grid">
+    <article class="card is-clickable" *ngFor="let it of items; trackBy: trackByPaciente" (click)="onClick(it)">
+      <div class="avatar">
+        <img *ngIf="it.paciente?.imagen_perfil?.[0]; else inicial" [src]="it.paciente?.imagen_perfil?.[0]" [alt]="it.paciente?.nombre || 'Paciente'">
+      </div>
+      <ng-template #inicial>
+        <div class="avatar avatar--placeholder">
+          {{ (it.paciente?.nombre ?? it.paciente?.email ?? '?').charAt(0).toUpperCase() }}
+        </div>
+      </ng-template>
+
+      <div class="info">
+        <h3 class="nombre">{{ it.paciente?.nombre }} {{ it.paciente?.apellido }}</h3>
+        <p class="email">{{ it.paciente?.email }}</p>
+      </div>
+    </article>
+  </div>
+
+  <!-- Modal local eliminado en favor del panel expandible del dashboard -->
+</div>

@@ -1,0 +1,30 @@
+<div class="pdf-wrapper">
+  <div *ngIf="cargando">Cargando...</div>
+  <div *ngIf="!cargando && error" style="color:#ef4444;">{{ error }}</div>
+  <div #pdfContent id="pdfContent" *ngIf="!cargando && !error">
+    <header class="pdf-header">
+      <img src="favicon.ico" alt="Logo" class="pdf-logo" />
+      <div class="pdf-title">
+        <h2>Historial de turnos</h2>
+        <p class="muted">{{ user?.nombre }} {{ user?.apellido }} · {{ user?.email }}</p>
+      </div>
+    </header>
+    <section class="pdf-list">
+      <article class="pdf-card" *ngFor="let t of historial; index as i">
+        <div class="row">
+          <span class="label">#</span><span class="value">{{ i + 1 }}</span>
+        </div>
+        <div class="row">
+          <span class="label">Fecha</span>
+          <span class="value">{{ t.fecha_turno | date : "EEEE dd/MM/yyyy, 'Hora' HH:mm" | titlecase }}</span>
+        </div>
+        <div class="row"><span class="label">Estado</span><span class="value">{{ t.estado || '-' }}</span></div>
+        <div class="row"><span class="label">Especialidad</span><span class="value">{{ t.especialidad || '-' }}</span></div>
+        <div class="row"><span class="label">Profesional</span><span class="value">{{ (t.especialista?.nombre || '') + ' ' + (t.especialista?.apellido || '') }}</span></div>
+        <div class="row"><span class="label">Email profesional</span><span class="value">{{ t.especialista?.email || '-' }}</span></div>
+      </article>
+      <p *ngIf="!historial?.length" class="muted">Sin turnos</p>
+    </section>
+  </div>
+  <button *ngIf="showButton" type="button" class="btn" (click)="descargarPDF()">Descargar PDF</button>
+</div>

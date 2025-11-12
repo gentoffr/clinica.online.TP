@@ -37,7 +37,14 @@
 
   <!-- Acciones -->
   <div *ngIf="!cargando && !error && usuarios.length" class="acciones">
-    <button class="btn-export" (click)="exportarExcel()">Descargar planilla de datos de usuarios</button>
+    <div class="acciones__left">
+      <button class="icon-btn" type="button" title="Filtrar">
+        <span class="material-symbols-outlined">filter_list</span>
+      </button>
+    </div>
+    <div class="acciones__right">
+      <button class="btn-export" (click)="exportarExcel()">Descargar planilla de datos de usuarios</button>
+    </div>
   </div>
 
   <!-- Listado -->
@@ -98,7 +105,13 @@
           <div class="label">Obra Social</div>
           <div class="value">{{ seleccionado?.obra_social }}</div>
         </div>
+        <!-- PDF generator component (hidden UI) -->
+        <app-pdf #pdfCmp [userId]="seleccionado?.id" [showButton]="false" style="display:none"></app-pdf>
       </section>
+
+      <footer class="modal__footer">
+        <button class="btn" (click)="pdfCmp.descargar()">Ver historial de turnos</button>
+      </footer>
     </article>
   </div>
 </div>

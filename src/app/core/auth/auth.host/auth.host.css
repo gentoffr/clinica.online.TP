@@ -1,8 +1,22 @@
+.host, :host {
+  --bg: #0e0f10;
+  --surface: #16181b;
+  --surface-2: #1e2125;
+  --text: #e7e9ea;
+  --muted: #a6adb4;
+  --primary: #8fd44b;
+  --accent: #b4ff4a;
+
+  display: block;
+  color: var(--text);
+  background: var(--bg);
+}
+
 .panel {
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, rgb(243 244 255), rgb(224 231 255));
+  background: var(--bg);
   transition: padding 0.45s ease;
 }
 
@@ -10,10 +24,10 @@
   width: min(92vw, 560px);
   height: clamp(540px, 78vh, 720px);
   border-radius: 1.25rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
+  background: linear-gradient(180deg, rgba(22, 24, 27, 0.96), rgba(30, 33, 37, 0.94));
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
   overflow: hidden;
   position: relative;
   isolation: isolate;
@@ -49,14 +63,14 @@
   padding: 2px;
   background: conic-gradient(
     from 180deg at 50% 50%,
-    rgba(59, 130, 246, 0.35),
-    rgba(99, 102, 241, 0.35),
-    rgba(59, 130, 246, 0.35)
+    rgba(143, 212, 75, 0.30),
+    rgba(180, 255, 74, 0.25),
+    rgba(143, 212, 75, 0.30)
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.45;
+  opacity: 0.35;
   pointer-events: none;
 }
 

@@ -7,12 +7,13 @@ import { UsuarioService } from '../../../services/usuario.service';
 import { ToastService } from '../../../services/toast.service';
 import { RegistroTurno } from '../registro-turno/registro-turno';
 import { Router } from '@angular/router';
-import { ListadoTurnos } from './listado-turnos/listado-turnos';
+import { ListadoTurnos } from '../../../features/listado-turnos/listado-turnos';
+import { PerfilModalComponent } from '../../../features/perfil-modal/perfil-modal';
 
 @Component({
   selector: 'app-home-paciente',
   standalone: true,
-  imports: [CommonModule, RegistroTurno, ListadoTurnos],
+  imports: [CommonModule, RegistroTurno, ListadoTurnos, PerfilModalComponent],
   templateUrl: './home-paciente.html',
   styleUrls: ['./home-paciente.scss'],
 })
@@ -22,6 +23,7 @@ export class Homepaciente implements OnInit {
   user!: any;
   sacandoTurno = false;
   avatarCargando = true;
+  perfilAbierto = false;
   constructor(
     public authService: AuthService,
     private router: Router,
@@ -36,6 +38,8 @@ export class Homepaciente implements OnInit {
     console.log('[Homepaciente] User data:', this.user);
     this.avatarCargando = false;
   }
+  abrirPerfil(){ this.perfilAbierto = true; }
+  cerrarPerfil(){ this.perfilAbierto = false; }
   toggleMenu(): void {
     console.log(this.authService.user);
     this.menuCollapsed = !this.menuCollapsed;
@@ -123,5 +127,13 @@ export class Homepaciente implements OnInit {
   async cerrarSesion() {
     await this.authService.logout();
     this.router.navigate(['/inicio']);
+  }
+
+  onCalificarAtencion(turno: any) {
+    try {
+      // Aquí podrías abrir un modal de calificación; por ahora solo aviso
+      this.toast.success('Abrir calificación para el turno seleccionado');
+      console.log('Calificar atención - turno:', turno);
+    } catch (e) {}
   }
 }

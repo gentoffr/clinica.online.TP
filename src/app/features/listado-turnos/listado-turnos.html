@@ -1,0 +1,142 @@
+<div class="listado-turnos">
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando turnos…</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!cargando && error" class="estado estado--error">
+    <span class="estado__icon">!</span>
+    <div>
+      <h4>Error</h4>
+      <p>{{ error }}</p>
+    </div>
+  </div>
+
+  <!-- Vacío -->
+  <div *ngIf="!cargando && !error && turnos.length === 0" class="estado">
+    <span class="estado__icon">·</span>
+    <div>
+      <h4>Sin turnos</h4>
+      <p>{{ esEspecialista ? 'No tiene turnos asignados' : 'No hay registros para mostrar' }}</p>
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div *ngIf="!cargando && !error && turnos.length" class="acciones">
+    <h4 style="display: flex;">Mis turnos</h4>
+    <div class="acciones__right">
+      <button class="icon-btn" type="button" title="Ordenar" (click)="toggleFiltros()">
+        <span class="material-symbols-outlined">filter_list</span>
+      </button>
+      <div class="sort-popover" *ngIf="filtrosAbiertos" (click)="$event.stopPropagation()">
+        <h5>Ordenar por</h5>
+        <button class="sort-item" [class.active]="ordenActual==='fecha_desc'" (click)="ordenarPor('fecha_desc')">Fecha más reciente</button>
+        <button class="sort-item" [class.active]="ordenActual==='fecha_asc'" (click)="ordenarPor('fecha_asc')">Fecha más antigua</button>
+        <button class="sort-item" [class.active]="ordenActual==='estado'" (click)="ordenarPor('estado')">Estado</button>
+        <button class="sort-item" [class.active]="ordenActual==='especialidad'" (click)="ordenarPor('especialidad')">Especialidad</button>
+        <button class="sort-item" [class.active]="ordenActual==='paciente'" (click)="ordenarPor('paciente')">Paciente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Listado -->
+  <div *ngIf="!cargando && !error && turnos.length" class="grid">
+    <article class="card" *ngFor="let t of turnos; trackBy: trackById" [class.is-clickable]="true" (click)="abrirModal(t)">
+      <ng-template #inicial>
+        <div class="avatar avatar--placeholder">
+          {{ (t.especialista?.nombre ?? t.especialista?.email ?? '?').charAt(0).toUpperCase() }}
+        </div>
+      </ng-template>
+
+      <div class="info">
+        <h3 class="titulo" *ngIf="!esEspecialista; else verPaciente">
+          Dr.
+          {{ t.especialista?.nombre }} {{ t.especialista?.apellido }}
+          <span class="muted" *ngIf="t.especialidad">· {{ t.especialidad }}</span>
+        </h3>
+        <p class="detalle">Estado: {{t.estado}}</p>
+        <p class="detalle">
+          {{ t.fecha_turno | date : "EEEE dd/MM/yyyy, 'Hora' HH:mm" | titlecase }}
+        </p>
+      </div>
+        <ng-template #verPaciente>
+          <h3 class="titulo">Paciente: {{ t.paciente?.nombre }} {{ t.paciente?.apellido }}</h3>
+        </ng-template>
+    </article>
+  </div>
+
+  <div *ngIf="modalAbierto" class="modal-backdrop" (click)="cerrarModal()" tabindex="0" (keydown.escape)="cerrarModal()">
+    <article class="modal" (click)="$event.stopPropagation()">
+      <button class="modal__close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+
+      <header class="modal__header">
+        <div class="avatar avatar--lg">
+          <img *ngIf="seleccionado?.paciente?.imagen_perfil?.[0]; else inicialPac" [src]="seleccionado?.paciente?.imagen_perfil?.[0]" [alt]="seleccionado?.paciente?.nombre || 'Paciente'">
+        </div>
+        <ng-template #inicialPac>
+          <div class="avatar avatar--lg avatar--placeholder">
+            {{ (seleccionado?.paciente?.nombre ?? seleccionado?.paciente?.email ?? '?').charAt(0).toUpperCase() }}
+          </div>
+        </ng-template>
+
+        <div class="header__info">
+          <h2>{{ seleccionado?.paciente?.nombre }} {{ seleccionado?.paciente?.apellido }}</h2>
+          <p class="muted">{{ seleccionado?.paciente?.email }}</p>
+        </div>
+      </header>
+
+      <section class="modal__body">
+        <div class="row">
+          <div class="label">Fecha</div>
+          <div class="value">{{ seleccionado?.fecha_turno | date : "EEEE dd/MM/yyyy, 'Hora' HH:mm" | titlecase }}</div>
+        </div>
+        <div class="row" *ngIf="seleccionado?.especialidad">
+          <div class="label">Especialidad</div>
+          <div class="value">{{ seleccionado?.especialidad }}</div>
+        </div>
+        <div class="row" *ngIf="seleccionado?.estado">
+          <div class="label">Estado</div>
+          <div class="value">{{ seleccionado?.estado }}</div>
+        </div>
+        <div class="row" *ngIf="verResena">
+          <div class="label">Reseña</div>
+          <div class="value">
+            <ng-container *ngIf="seleccionado?.resena?.trim(); else sinResena">
+              <p class="resena-text">{{ seleccionado?.resena }}</p>
+            </ng-container>
+            <ng-template #sinResena>
+              <span class="muted">No hay reseña cargada</span>
+            </ng-template>
+          </div>
+        </div>
+      </section>
+
+      <footer class="modal__footer">
+        <button class="btn primary" *ngIf="!esEspecialista && seleccionado?.estado === 'completado'" (click)="calificarAtencion()">Calificar atencion</button>
+        <ng-container *ngIf="esEspecialista; else accionesPaciente">
+          <ng-container *ngIf="seleccionado?.estado === 'completado'; else acciones">
+            <button class="btn" (click)="toggleVerResena()">{{ verResena ? 'Ocultar reseña' : 'Ver reseña' }}</button>
+            <button class="btn" (click)="cargarResena()">{{ seleccionado?.resena?.trim() ? 'Modificar reseña' : 'Cargar reseña' }}</button>
+            <button class="btn primary" (click)="archivarTurno()">Archivar turno</button>
+          </ng-container>
+          <ng-template #acciones>
+            <ng-container *ngIf="seleccionado?.estado === 'cancelado'; else accionesNormales">
+              <button class="btn primary" (click)="archivarTurno()">Archivar turno</button>
+            </ng-container>
+            <ng-template #accionesNormales>
+              <button class="btn danger" (click)="solicitarCancelacion()">{{ seleccionado?.estado === 'pendiente' ? 'Rechazar turno' : 'Cancelar turno' }}</button>
+              <button class="btn primary" (click)="confirmarTurno()">{{ seleccionado?.estado === 'confirmado' ? 'Ejecutar turno' : 'Confirmar turno' }}</button>
+            </ng-template>
+          </ng-template>
+        </ng-container>
+        <ng-template #accionesPaciente>
+          <button class="btn" (click)="toggleVerResena()">{{ verResena ? 'Ocultar reseña' : 'Ver reseña' }}</button>
+        </ng-template>
+      </footer>
+    </article>
+  </div>
+</div>
+
+

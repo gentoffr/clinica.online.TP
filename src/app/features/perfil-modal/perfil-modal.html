@@ -1,0 +1,46 @@
+<div class="modal-backdrop" (click)="close.emit()" tabindex="0" (keydown.escape)="close.emit()">
+  <article class="modal" (click)="$event.stopPropagation()">
+    <button class="modal__close" (click)="close.emit()" aria-label="Cerrar">×</button>
+
+    <header class="modal__header">
+      <div class="avatar avatar--lg">
+        <img *ngIf="avatar; else inicial" [src]="avatar" [alt]="nombre" class="avatar avatar--lg"/>
+      </div>
+      <ng-template #inicial>
+        <div class="avatar avatar--lg avatar--placeholder">{{ inicialNombre }}</div>
+      </ng-template>
+      <div class="header__info">
+        <h2>{{ nombre }}</h2>
+        <p class="muted">{{ email }}</p>
+      </div>
+    </header>
+
+    <section class="modal__body">
+      <div class="row" *ngIf="user?.dni">
+        <div class="label">DNI</div>
+        <div class="value">{{ user?.dni }}</div>
+      </div>
+      <div class="row" *ngIf="user?.edad">
+        <div class="label">Edad</div>
+        <div class="value">{{ user?.edad }}</div>
+      </div>
+      <div class="row" *ngIf="user?.obra_social">
+        <div class="label">Obra social</div>
+        <div class="value">{{ user?.obra_social }}</div>
+      </div>
+      <div class="row" *ngIf="user?.especialidad">
+        <div class="label">Especialidad</div>
+        <div class="value">{{ user?.especialidad }}</div>
+      </div>
+      <div class="row" *ngIf="user?.telefono">
+        <div class="label">Teléfono</div>
+        <div class="value">{{ user?.telefono }}</div>
+      </div>
+    </section>
+
+    <footer class="modal__footer">
+      <button class="btn primary" (click)="close.emit()">Cerrar</button>
+    </footer>
+  </article>
+</div>
+

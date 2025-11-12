@@ -3,18 +3,19 @@
   max-width: 600px;
   padding: 2rem;
   border-radius: 1rem;
+  color: var(--text);
 }
 h1 {
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 700;
-  color: rgb(17 24 39);
+  color: var(--text);
   transform: translateY(-95%);
   
 }
 .btn {
   background: linear-gradient(90deg, #3b82f6, #6366f1);
   color: #fff;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.08);
   padding: 1rem;
   font-size: 1rem;
   border-radius: 0.75rem;
@@ -25,15 +26,16 @@ h1 {
 }
 .btn:hover {
   transform: translateY( -1px);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 .subtitulo{
     transform: translateY(-8rem);
+    color: var(--muted);
 }
 .icono
 {
     font-size: 8rem;
-    color: rgb(17 24 39);
+    color: rgba(231,233,234,0.14);
     transform: translate(83%, -100%);
     position: absolute;
 }

@@ -5,9 +5,10 @@ import { AuthService } from '../../../services/auth.service';
 import { TurnoService } from '../../../services/turno.service';
 import { UsuarioService } from '../../../services/usuario.service';
 import { ToastService } from '../../../services/toast.service';
-import { ListadoUsuarios } from './listado-usuarios/listado-usuarios';
+import { ListadoUsuarios } from '../../../features/listado-usuarios/listado-usuarios';
 import { RegistroTurno } from '../registro-turno/registro-turno';
 import { Router } from '@angular/router';
+import { PerfilModalComponent } from '../../../features/perfil-modal/perfil-modal';
 type AdminUser = {
   nombre: any;
   email: any;
@@ -17,7 +18,7 @@ type AdminUser = {
 @Component({
   selector: 'app-home-administrador',
   standalone: true,
-  imports: [CommonModule, ListadoUsuarios, RegistroTurno],
+  imports: [CommonModule, ListadoUsuarios, RegistroTurno, PerfilModalComponent],
   templateUrl: './home-administrador.html',
   styleUrls: ['./home-administrador.scss'],
 })
@@ -27,6 +28,7 @@ export class HomeAdministrador implements OnInit {
   user!: any;
   sacandoTurno = false;
   avatarCargando = true;
+  perfilAbierto = false;
   constructor(
     public authService: AuthService,
     private router: Router,
@@ -41,6 +43,8 @@ export class HomeAdministrador implements OnInit {
     console.log('[HomeAdministrador] User data:', this.user);
     this.avatarCargando = false;
   }
+  abrirPerfil(){ this.perfilAbierto = true; }
+  cerrarPerfil(){ this.perfilAbierto = false; }
   toggleMenu(): void {
     console.log(this.authService.user);
     this.menuCollapsed = !this.menuCollapsed;
