@@ -163,10 +163,29 @@ export class AuthService {
       throw profErr;
     }
 
-    const {data, error} = await supabase.from('especialidades')
-    .insert({ especialidad: input.tipo === 'especialista' ? input.especialidad : null });
-    if (error) {
-      console.error('Error al insertar especialidad:', error);
+    if (input.tipo === 'especialista' && input.especialidad) {
+      const especialidadValor = input.especialidad.trim();
+      if (especialidadValor) {
+        try {
+          const { data: existentes, error: buscarError } = await supabase
+            .from('especialidades')
+            .select('id')
+            .eq('especialidad', especialidadValor)
+            .limit(1);
+          if (buscarError) {
+            console.warn('No se pudo verificar la especialidad existente:', buscarError);
+          } else if (!existentes?.length) {
+            const { error: insertError } = await supabase
+              .from('especialidades')
+              .insert({ especialidad: especialidadValor });
+            if (insertError) {
+              console.error('Error al insertar especialidad:', insertError);
+            }
+          }
+        } catch (err) {
+          console.error('Error al sincronizar especialidad', err);
+        }
+      }
     }
 
     this._profile$.next(prof as Profile);

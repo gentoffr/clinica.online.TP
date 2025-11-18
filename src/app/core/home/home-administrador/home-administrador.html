@@ -21,13 +21,10 @@
     <nav class="menu">
       <h4 class="menu-title">Acciones</h4>
       <ul>
-        <li class="menu-item active">
-          <span class="bullet"></span><span class="label">Dashboard</span>
+        <li class="menu-item" [class.active]="activePanel==='usuarios'" (click)="mostrarPanel('usuarios')">
+          <span class="bullet"></span><span class="label">Usuarios</span>
         </li>
-        <li class="menu-item"><span class="bullet"></span><span class="label">Usuarios</span></li>
-        <li class="menu-item"><span class="bullet"></span><span class="label">Pedidos</span></li>
-        <li class="menu-item"><span class="bullet"></span><span class="label">Productos</span></li>
-        <li class="menu-item"><span class="bullet"></span><span class="label">Reportes</span></li>
+        <li class="menu-item" [class.active]="activePanel==='reportes'" (click)="mostrarPanel('reportes')"><span class="bullet"></span><span class="label">Reportes</span></li>
         <li class="menu-item">
           <span class="bullet"></span><span class="label">Configuración</span>
         </li>
@@ -63,13 +60,35 @@
     <section class="content">
       <!-- Paneles perfectamente alineados en una grilla uniforme -->
       <div class="panels">
-        <section class="panel">
+        <section class="panel panel--listado panel-animate" *ngIf="activePanel==='usuarios'">
           <h4>Listado de usuarios</h4>
-          <div class="listado">
+          <div
+            class="listado listado-scroll"
+            #listadoScroll
+            (scroll)="onUsuariosScroll()"
+          >
             <app-listado-usuarios></app-listado-usuarios>
           </div>
+          <button
+            type="button"
+            class="scroll-indicator scroll-indicator--top"
+            *ngIf="mostrarFlechaArriba"
+            (click)="scrollUsuarios(-1)"
+            aria-label="Ver usuarios anteriores"
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            class="scroll-indicator scroll-indicator--bottom"
+            *ngIf="mostrarFlechaAbajo"
+            (click)="scrollUsuarios(1)"
+            aria-label="Ver más usuarios"
+          >
+            ▼
+          </button>
         </section>
-        <section class="panel" [class.expandido]="sacandoTurno">
+        <section class="panel" [class.expandido]="sacandoTurno" *ngIf="activePanel==='usuarios'">
           <h4>Accion rapida</h4>
           <app-registro-turno
             [requiereEmailPaciente]="true"
@@ -77,6 +96,108 @@
             (openedChange)="onSacarTurnoOpen($event)"
           ></app-registro-turno>
         </section>
+        <section class="panel panel--reportes panel-animate" *ngIf="activePanel==='reportes'">
+          <header class="panel__header panel__header--reportes">
+            <div>
+              <h4>Reportes</h4>
+              <span class="muted">Turnos creados por día</span>
+            </div>
+            <div class="panel__actions">
+              <label class="reportes-filtro">
+                <span>Especialidad</span>
+                <select
+                  name="chartEspecialidad"
+                  [disabled]="especialidadesCargando"
+                  [ngModel]="filtroEspecialidad || ''"
+                  (ngModelChange)="onFiltroEspecialidadChange($event)"
+                >
+                  <option value="">Todas</option>
+                  <option
+                    *ngFor="let esp of especialidades"
+                    [value]="obtenerValorEspecialidad(esp)"
+                  >
+                    {{ obtenerEtiquetaEspecialidad(esp) }}
+                  </option>
+                </select>
+              </label>
+              <button class="icon-btn refresh-btn" type="button" (click)="refrescarReporte()" [disabled]="chartCargando" aria-label="Refrescar reporte">
+                ↻
+              </button>
+            </div>
+          </header>
+          <div class="reportes">
+            <div class="estado-mini" *ngIf="chartCargando">
+              <span class="spinner spinner--inline" aria-hidden="true"></span>
+              <span>Cargando datos…</span>
+            </div>
+            <div class="estado-mini estado-mini--error" *ngIf="!chartCargando && chartError">
+              <span>Error al cargar reporte</span>
+              <small>{{ chartError }}</small>
+            </div>
+            <div class="estado-mini" *ngIf="!chartCargando && !chartError && !chartTieneDatos">
+              <span>Sin datos para mostrar</span>
+            </div>
+            <div
+              #chartTurnosDia
+              class="reportes__chart"
+              [class.reportes__chart--hidden]="chartCargando || chartError || !chartTieneDatos"
+            ></div>
+          </div>
+        </section>
+        <section class="panel panel--entregados panel-animate" *ngIf="activePanel==='reportes'">
+          <header class="panel__header">
+            <div>
+              <h4>Turnos entregados</h4>
+              <span class="muted">Filtrá por rango de fechas</span>
+            </div>
+            <button class="icon-btn refresh-btn" type="button" (click)="cargarTurnosEntregados()" [disabled]="turnosEntregadosCargando" aria-label="Refrescar turnos entregados">
+              ↻
+            </button>
+          </header>
+          <div class="entregados-filtros">
+            <label>
+              <span>Desde</span>
+              <input type="date" [(ngModel)]="entregadosDesde" name="entregadosDesde" />
+            </label>
+            <label>
+              <span>Hasta</span>
+              <input type="date" [(ngModel)]="entregadosHasta" name="entregadosHasta" />
+            </label>
+            <button type="button" class="entregados-aplicar" (click)="cargarTurnosEntregados()" [disabled]="turnosEntregadosCargando">
+              <span class="spinner spinner--inline" *ngIf="turnosEntregadosCargando" aria-hidden="true"></span>
+              <span>{{ turnosEntregadosCargando ? 'Filtrando…' : 'Aplicar' }}</span>
+            </button>
+          </div>
+          <div class="entregados-estado" *ngIf="turnosEntregadosError">
+            <span>{{ turnosEntregadosError }}</span>
+          </div>
+          <div class="entregados-estado" *ngIf="turnosEntregadosCargando && !turnosEntregadosError">
+            <span class="spinner spinner--inline" aria-hidden="true"></span>
+            <span>Cargando turnos…</span>
+          </div>
+          <div class="entregados-estado" *ngIf="!turnosEntregadosCargando && !turnosEntregadosError && !turnosEntregados.length">
+            <span>No hay turnos en este rango</span>
+          </div>
+          <ul class="entregados-lista" *ngIf="turnosEntregados.length">
+            <li class="entregados-item" *ngFor="let turno of turnosEntregados; trackBy: trackTurnoEntregado">
+              <div class="entregados-item__line">
+                <span class="entregados-item__fecha">{{ turno.fecha_turno | date: 'dd/MM/yyyy HH:mm' }}</span>
+                <span class="entregados-item__badge">{{ turno.especialidad || 'Sin especialidad' }}</span>
+              </div>
+              <div class="entregados-item__personas">
+                <div>
+                  <span class="muted label">Paciente</span>
+                  <strong>{{ nombreCompleto(turno.paciente) }}</strong>
+                </div>
+                <div>
+                  <span class="muted label">Especialista</span>
+                  <strong>{{ nombreCompleto(turno.especialista) }}</strong>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+        
       </div>
     </section>
   </main>

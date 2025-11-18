@@ -65,7 +65,11 @@
       <div class="panels">
         <section class="panel panel-animate" *ngIf="activeSection==='turnos'">
           <div class="listado">
-            <app-listado-turnos (ejecutar)="onEjecutarTurno($event)" (resenar)="onCargarResena($event)" (cancelarMotivo)="onCancelarConMotivo($event)"></app-listado-turnos>
+            <app-listado-turnos
+              (ejecutar)="onEjecutarTurno($event)"
+              (resenar)="onCargarResena($event)"
+              (cancelarMotivo)="onCancelarConMotivo($event)"
+            ></app-listado-turnos>
           </div>
         </section>
         <section class="panel panel-animate" *ngIf="activeSection==='pacientes'">
@@ -90,7 +94,7 @@
                 </label>
                 <footer class="actions" style="margin-top: 12px">
                   <button type="button" class="btn-secondary" (click)="cancelarResena()">Cancelar</button>
-                  <button type="button" class="btn" (click)="guardarResena()" [disabled]="!resenaTexto?.trim()">Guardar</button>
+                  <button type="button" class="btn" (click)="guardarResena()" [disabled]="!resenaTexto.trim()">Guardar</button>
                 </footer>
               </div>
             </div>
@@ -110,7 +114,7 @@
                 </label>
                 <footer class="actions" style="margin-top: 12px">
                   <button type="button" class="btn-secondary" (click)="cancelarCancelacion()">Volver</button>
-                  <button type="button" class="btn" (click)="guardarCancelacion()" [disabled]="!cancelTexto?.trim()">Confirmar cancelación</button>
+                  <button type="button" class="btn" (click)="guardarCancelacion()" [disabled]="!cancelTexto.trim()">Confirmar cancelación</button>
                 </footer>
               </div>
             </div>
@@ -135,7 +139,7 @@
                         <p class="detalle">{{ t.fecha_turno | date : "EEEE dd/MM/yyyy, 'Hora' HH:mm" | titlecase }}</p>
                       </div>
                     </article>
-                    <article class="card" *ngIf="(ultimosTurnos?.length||0)===0">
+                    <article class="card" *ngIf="(ultimosTurnos.length||0)===0">
                       <div class="info">
                         <h3 class="titulo">Sin turnos</h3>
                         <p class="detalle">No hay turnos recientes</p>

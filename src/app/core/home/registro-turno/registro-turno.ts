@@ -9,15 +9,17 @@ import {
   Validators,
 } from '@angular/forms';
 import { UsuarioService } from '../../../services/usuario.service';
+import { TurnoService } from '../../../services/turno.service';
+import { CapitalizarPipe } from '../../../shared/pipes/capitalizar.pipe';
 
-type DiaListado = { iso: string; date: Date; etiqueta: string; corto: string };
+type DiaListado = { iso: string; date: Date; etiqueta: string; corto: string; pasado: boolean };
 
 @Component({
   selector: 'app-registro-turno',
   templateUrl: './registro-turno.html',
   styleUrls: ['./registro-turno.scss'],
   standalone: true,
-  imports: [FormsModule, CommonModule, ReactiveFormsModule],
+  imports: [FormsModule, CommonModule, ReactiveFormsModule, CapitalizarPipe],
 })
 export class RegistroTurno implements OnInit {
   // Wizard
@@ -64,16 +66,24 @@ export class RegistroTurno implements OnInit {
   modalEspAbierto = false; // especialidades
   modalMedAbierto = false; // especialistas
 
-  // Días/slots (15 días)
+  // Días/slots (ventana mensual)
   dias: DiaListado[] = [];
   idxActivo = 0;
   slotsActivos: string[] = [];
-  readonly diasVentana = 15;
   readonly slotStepMin = 30;
   readonly horario = { inicio: 9, fin: 18 };
   hoyISO = this.toISODate(new Date());
+  mesActualEtiqueta = '';
+  private turnosBloqueados = new Set<string>();
+  private mesBase = this.inicioDelMes(new Date());
+  private swipeStartX: number | null = null;
+  private readonly swipeThresholdPx = 60;
 
-  constructor(private fb: FormBuilder, private usuarioService: UsuarioService) {}
+  constructor(
+    private fb: FormBuilder,
+    private usuarioService: UsuarioService,
+    private turnoService: TurnoService
+  ) {}
 
   async ngOnInit() {
     this.especialistas = await this.usuarioService.obtenerTodosLosEspecialistas();
@@ -95,7 +105,6 @@ export class RegistroTurno implements OnInit {
     });
 
     this.generarDias();
-    this.cargarSlots(0);
   }
 
   // Open/close modales
@@ -130,19 +139,54 @@ export class RegistroTurno implements OnInit {
     this.cerrarModalEspecialidades();
   }
 
-  seleccionarEspecialista(especialista: any) {
+  async seleccionarEspecialista(especialista: any) {
     this.especialistaSeleccionado = especialista;
     this.formPaso1.patchValue({ especialista: especialista.nombre + ' ' + especialista.apellido });
+    this.formPaso2.patchValue({ fecha: '', hora: '' });
     this.cerrarModalEspecialistas();
+    await this.cargarTurnosEspecialista(especialista?.id);
+    console.log("", especialista);
+  }
+
+  private async cargarTurnosEspecialista(id: string | undefined) {
+    this.turnosBloqueados = new Set<string>();
+    if (!id) {
+      this.cargarSlots(this.idxActivo);
+      return;
+    }
+    try {
+      const turnos = await this.turnoService.obtenerTurnoPorEspecialista(id);
+      console.log(turnos)
+      const bloqueados = new Set<string>();
+
+      (turnos ?? []).forEach((turno: any) => {
+        if (!turno?.fecha_turno) return;
+        const fechaTurno = new Date(turno.fecha_turno);
+        if (isNaN(fechaTurno.getTime())) return;
+        bloqueados.add(this.claveDesdeFecha(fechaTurno));
+        const sumaUnaHora = new Date(fechaTurno.getTime() + 60 * 60 * 1000);
+        bloqueados.add(this.claveDesdeFecha(sumaUnaHora));
+        console.log("bloqueados",bloqueados)
+      });
+
+      this.turnosBloqueados = bloqueados;
+    } catch (error) {
+      console.error('No se pudieron cargar los turnos del especialista', error);
+      this.turnosBloqueados = new Set<string>();
+    } finally {
+      this.cargarSlots(this.idxActivo);
+    }
   }
 
   seleccionarDia(i: number) {
+    if (!this.dias[i] || this.dias[i].pasado) return;
     this.idxActivo = i;
     this.cargarSlots(i);
   }
 
   seleccionarHora(hhmm: string) {
     const dia = this.dias[this.idxActivo];
+    if (!dia) return;
     this.formPaso2.patchValue({ fecha: dia.iso, hora: hhmm });
     this.cerrarModalTurnos();
   }
@@ -172,24 +216,91 @@ export class RegistroTurno implements OnInit {
     )?.nombre;
   }
 
+  cambiarMes(delta: number) {
+    if (!delta) return;
+    const siguiente = new Date(this.mesBase);
+    siguiente.setMonth(siguiente.getMonth() + delta);
+    const hoyMes = this.inicioDelMes(this.obtenerHoy());
+    if (siguiente.getTime() < hoyMes.getTime()) return;
+    this.mesBase = this.inicioDelMes(siguiente);
+    this.generarDias(this.mesBase);
+  }
+
+  puedeIrMesAnterior() {
+    const hoyMes = this.inicioDelMes(this.obtenerHoy());
+    return this.mesBase.getTime() > hoyMes.getTime();
+  }
+
+  onCalendarioPointerDown(event: PointerEvent) {
+    if (event.pointerType === 'mouse') return;
+    this.swipeStartX = event.clientX;
+  }
+
+  onCalendarioPointerUp(event: PointerEvent) {
+    if (event.pointerType === 'mouse') return;
+    if (this.swipeStartX === null) return;
+    const delta = event.clientX - this.swipeStartX;
+    this.evaluarSwipe(delta);
+    this.swipeStartX = null;
+  }
+
+  onCalendarioPointerLeave() {
+    this.swipeStartX = null;
+  }
+
+  private evaluarSwipe(delta: number) {
+    if (Math.abs(delta) < this.swipeThresholdPx) return;
+    this.cambiarMes(delta < 0 ? 1 : -1);
+  }
+
   // Fechas/slots
-  private generarDias() {
-    this.dias = Array.from({ length: this.diasVentana }, (_, i) => {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      d.setDate(d.getDate() + i);
+  private generarDias(base: Date = this.mesBase) {
+    const inicioMes = this.inicioDelMes(base);
+    this.mesBase = inicioMes;
+    const hoy = this.obtenerHoy();
+    const totalDiasMes = new Date(inicioMes.getFullYear(), inicioMes.getMonth() + 1, 0).getDate();
+
+    this.dias = Array.from({ length: totalDiasMes }, (_, i) => {
+      const d = new Date(inicioMes);
+      d.setDate(i + 1);
+      const pasado = d.getTime() < hoy.getTime();
       return {
         date: d,
         iso: this.toISODate(d),
         etiqueta: this.etiquetaLarga(d),
         corto: this.etiquetaCorta(d),
+        pasado,
       };
     });
+
+    const idxDisponible = this.dias.findIndex((dia) => !dia.pasado);
+    this.idxActivo = idxDisponible >= 0 ? idxDisponible : 0;
+
+    this.mesActualEtiqueta = new Intl.DateTimeFormat('es-AR', {
+      month: 'long',
+      year: 'numeric',
+    })
+      .format(inicioMes)
+      .replace('.', '');
+
+    if (!this.dias.length || this.dias[this.idxActivo]?.pasado) {
+      this.slotsActivos = [];
+      return;
+    }
+
+    this.cargarSlots(this.idxActivo);
   }
 
   private cargarSlots(i: number) {
-    const d = this.dias[i].date;
+    const dia = this.dias[i];
+    if (!dia || dia.pasado) {
+      this.slotsActivos = [];
+      return;
+    }
+    const d = dia.date;
     this.slotsActivos = this.generarSlots(d).filter((h) => this.esSlotDisponible(d, h));
+    console.log(this.slotsActivos)
+    console.log(this.turnosBloqueados)
   }
 
   private generarSlots(_: Date): string[] {
@@ -207,6 +318,8 @@ export class RegistroTurno implements OnInit {
   private esSlotDisponible(d: Date, hhmm: string): boolean {
     const esDomingo = d.getDay() === 0;
     if (esDomingo) return false;
+    const clave = this.claveSlot(d, hhmm);
+    if (this.turnosBloqueados.has(clave)) return false;
     return parseInt(hhmm.replace(':', ''), 10) % 100 !== 30;
   }
 
@@ -215,6 +328,33 @@ export class RegistroTurno implements OnInit {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  private toHHmm(d: Date): string {
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  private claveSlot(d: Date, hhmm: string): string {
+    return `${this.toISODate(d)}|${hhmm}`;
+  }
+
+  private claveDesdeFecha(fecha: Date): string {
+    return `${this.toISODate(fecha)}|${this.toHHmm(fecha)}`;
+  }
+
+  private inicioDelMes(d: Date) {
+    const base = new Date(d);
+    base.setDate(1);
+    base.setHours(0, 0, 0, 0);
+    return base;
+  }
+
+  private obtenerHoy() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return hoy;
   }
 
   private etiquetaLarga(d: Date): string {

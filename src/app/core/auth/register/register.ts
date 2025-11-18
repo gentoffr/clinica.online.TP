@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -12,6 +12,7 @@ import {
 import { AuthService } from '../../../services/auth.service';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../services/toast.service';
+import { UsuarioService } from '../../../services/usuario.service';
 // Custom validators
 function onlyLetters(): ValidatorFn {
   const regex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s'-]+$/;
@@ -57,15 +58,22 @@ function strongPass(): ValidatorFn {
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
-export class Register{
+export class Register implements OnInit {
   @Output() volver = new EventEmitter<void>();
   @Output() ingresar = new EventEmitter<void>();
   tipo: 'paciente'|'especialista' = 'paciente';
-  especialidades = ['Clínica Médica','Cardiología','Dermatología','Pediatría'];
+  private readonly especialidadesBase = ['Clínica Médica','Cardiología','Dermatología','Pediatría'];
+  especialidades: string[] = [];
+  especialidadesCargando = false;
   nuevaEspecialidad = '';
   loading = false;
   form: FormGroup;
-  constructor(private fb: FormBuilder, private authService: AuthService, private toastService: ToastService){
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private toastService: ToastService,
+    private usuarioService: UsuarioService
+  ){
     this.form = this.fb.group({
       tipo: ['paciente'],
       nombre: ['', [Validators.required, onlyLetters()]],
@@ -80,10 +88,22 @@ export class Register{
       foto2: [null],
       foto: [null]
     });
+    this.especialidades = [...this.especialidadesBase];
     this.syncTipo('paciente');
   }
 
-  setTipo(t: 'paciente'|'especialista'){ this.tipo = t; this.form.get('tipo')!.setValue(t); this.syncTipo(t); }
+  async ngOnInit() {
+    await this.cargarEspecialidades();
+  }
+
+  setTipo(t: 'paciente'|'especialista'){
+    this.tipo = t;
+    this.form.get('tipo')!.setValue(t);
+    this.syncTipo(t);
+    if (t === 'especialista') {
+      this.ensureEspecialidadDisponible();
+    }
+  }
 
   private syncTipo(t: 'paciente'|'especialista'){
     const cFoto1 = this.form.get('foto1')!;
@@ -118,7 +138,13 @@ export class Register{
   agregarEspecialidad(){
     const v = (this.nuevaEspecialidad || '').trim();
     if(!v) return;
-    if(!this.especialidades.includes(v)) this.especialidades = [...this.especialidades, v];
+    const normalizado = this.normalizarEspecialidad(v);
+    const existe = this.especialidades.some(
+      (e) => this.normalizarEspecialidad(e) === normalizado
+    );
+    if(!existe) {
+      this.especialidades = [...this.especialidades, v].sort((a, b) => a.localeCompare(b));
+    }
     this.form.get('especialidad')!.setValue(v);
     this.nuevaEspecialidad = '';
   }
@@ -197,5 +223,44 @@ export class Register{
       console.log('[Register] enviar() end');
       this.loading = false;
     }
+  }
+
+  private async cargarEspecialidades() {
+    this.especialidadesCargando = true;
+    try {
+      const data = await this.usuarioService.obtenerEspecialidadesDisponibles();
+      const valores = (data ?? [])
+        .map((item: any) => (item?.especialidad || '').trim())
+        .filter(Boolean);
+      const unicos = Array.from(new Set(valores));
+      this.especialidades = unicos.length ? unicos : [...this.especialidadesBase];
+    } catch (err) {
+      console.warn('[Register] No se pudieron cargar especialidades', err);
+      this.especialidades = [...this.especialidadesBase];
+    } finally {
+      this.especialidadesCargando = false;
+      this.ensureEspecialidadDisponible();
+    }
+  }
+
+  private ensureEspecialidadDisponible() {
+    if (this.tipo !== 'especialista') return;
+    const ctrl = this.form.get('especialidad');
+    if (!ctrl) return;
+    const actual = (ctrl.value || '').trim();
+    if (actual && actual !== '__otra__') {
+      const existe = this.especialidades.some(
+        (e) => this.normalizarEspecialidad(e) === this.normalizarEspecialidad(actual)
+      );
+      if (existe) return;
+    }
+    const candidata = this.especialidades[0];
+    if (candidata) {
+      ctrl.setValue(candidata);
+    }
+  }
+
+  private normalizarEspecialidad(value: string) {
+    return value.trim().toLowerCase();
   }
 }

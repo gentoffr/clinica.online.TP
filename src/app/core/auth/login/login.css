@@ -11,7 +11,7 @@
 }
 .form {
   width: 100%;
-  margin-top: 40px;
+  margin-top: 90px;
   max-width: 360px;
   display: grid;
   gap: 1rem;
@@ -110,7 +110,7 @@ input.invalid {
 .icono.role-paciente { border: 3px solid #5eead4; }
 .icon-strip-wrapper{
   position: absolute;
-  transform: translate(-17%,-80%);
+  transform: translate(-18%,-90%);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -230,4 +230,85 @@ input.invalid {
 
 .scroll-btn:hover{
   background: var(--surface);
+}
+
+.captcha-section {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.65rem;
+  padding: 0.65rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(99, 102, 241, 0.12));
+  display: grid;
+  gap: 0.5rem;
+}
+
+.captcha-box {
+  position: relative;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.captcha-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 8px, transparent 8px, transparent 16px),
+    repeating-linear-gradient(-120deg, rgba(15, 23, 42, 0.15) 0, rgba(15, 23, 42, 0.15) 6px, transparent 6px, transparent 12px);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.captcha-text {
+  font-family: 'Fira Mono', 'Courier New', monospace;
+  letter-spacing: 0.28em;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: #f8fafc;
+  text-shadow: 0 3px 6px rgba(15, 23, 42, 0.65);
+  z-index: 1;
+}
+
+.captcha-refresh {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.18);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  z-index: 1;
+  font-size: 0.85rem;
+}
+
+.captcha-refresh:hover:not(:disabled) {
+  transform: rotate(-12deg) scale(1.05);
+}
+
+.captcha-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.captcha-label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.captcha-label span {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.captcha-section .error {
+  margin-top: 0;
 }

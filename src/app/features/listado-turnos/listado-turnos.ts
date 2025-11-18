@@ -1,42 +1,71 @@
-import { Component, OnInit, EventEmitter, Output } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output, Input, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TurnoService } from '../../services/turno.service';
 import { UsuarioService } from '../../services/usuario.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { EstadoTurnoPipe } from '../../shared/pipes/estado-turno.pipe';
+import { HoverClassDirective } from '../../shared/directives/hover-class.directive';
+
+export type OrdenTurno = 'fecha_desc' | 'fecha_asc' | 'estado' | 'especialidad' | 'paciente';
+
 @Component({
   selector: 'app-listado-turnos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, EstadoTurnoPipe, HoverClassDirective],
   templateUrl: './listado-turnos.html',
   styleUrl: './listado-turnos.css'
 })
+
 export class ListadoTurnos implements OnInit {
   @Output() ejecutar = new EventEmitter<any>();
   @Output() resenar = new EventEmitter<any>();
   @Output() calificar = new EventEmitter<any>();
   @Output() cancelarMotivo = new EventEmitter<any>();
+  @Output() ordenPorChange = new EventEmitter<OrdenTurno>();
+  @Input() mostrarControles = true;
+  @Input()
+  set ordenPor(value: OrdenTurno | null) {
+    if (!value || value === this.ordenActual) return;
+    this.ordenActual = value;
+    this.aplicarFiltrosYOrden();
+  }
   turnos: any[] = [];
+  private turnosBase: any[] = [];
   cargando = true;
   error = '';
   esEspecialista = false;
   modalAbierto = false;
   seleccionado: any | null = null;
   verResena = false;
+  verMotivoCancel = false;
   filtrosAbiertos = false;
-  ordenActual: 'fecha_desc' | 'fecha_asc' | 'estado' | 'especialidad' | 'paciente' = 'fecha_desc';
+  ordenActual: OrdenTurno = 'fecha_desc';
+  filtroEspecialidad: string | null = null;
+  especialidades: any[] = [];
+  especialidadesCargando = false;
+  submenuEspecialidadesAbierto = false;
+  private readonly etiquetasOrden: Record<OrdenTurno, string> = {
+    fecha_desc: 'Fecha más reciente',
+    fecha_asc: 'Fecha más antigua',
+    estado: 'Estado',
+    especialidad: 'Especialidad',
+    paciente: 'Paciente',
+  };
 
   constructor(
     private turnoService: TurnoService,
     private usuarioService: UsuarioService,
     private auth: AuthService,
-    private toast: ToastService
+    private toast: ToastService,
+    private elRef: ElementRef
   ) {}
 
   trackById = (_: number, t: any) => t.id;
 
   async ngOnInit() {
     await this.loadTurnos();
+    this.cargarEspecialidades();
   }
 
   private async loadTurnos() {
@@ -62,7 +91,8 @@ export class ListadoTurnos implements OnInit {
         } catch {}
         completos.push({ ...t, especialista, paciente });
       }
-      this.turnos = completos;
+      this.turnosBase = completos;
+      this.aplicarFiltrosYOrden();
     } catch (e: any) {
       this.error = e?.message ?? 'Error al cargar turnos';
     } finally {
@@ -70,15 +100,28 @@ export class ListadoTurnos implements OnInit {
     }
   }
 
+  private async cargarEspecialidades() {
+    this.especialidadesCargando = true;
+    try {
+      this.especialidades = await this.usuarioService.obtenerEspecialidadesDisponibles();
+    } catch (e) {
+      console.warn('No se pudieron cargar las especialidades', e);
+      this.especialidades = [];
+    } finally {
+      this.especialidadesCargando = false;
+    }
+  }
+
   async reload() {
     this.cargando = true;
     await this.loadTurnos();
-    this.aplicarOrden();
+    this.aplicarFiltrosYOrden();
   }
 
   abrirModal(t: any) {
     this.seleccionado = t;
     this.verResena = false;
+    this.verMotivoCancel = false;
     this.modalAbierto = true;
   }
 
@@ -86,6 +129,7 @@ export class ListadoTurnos implements OnInit {
     this.modalAbierto = false;
     this.seleccionado = null;
     this.verResena = false;
+    this.verMotivoCancel = false;
   }
 
   async actualizarEstadoTurno(id: string, estado: 'confirmado' | 'cancelado' | 'archivado') {
@@ -95,6 +139,7 @@ export class ListadoTurnos implements OnInit {
       else if (estado === 'cancelado') updated = await this.turnoService.cancelarTurno(id);
       else if (estado === 'archivado') updated = await this.turnoService.archivarTurno(id);
       this.turnos = this.turnos.map((t) => (t.id === id ? { ...t, ...updated } : t));
+      this.turnosBase = this.turnosBase.map((t) => (t.id === id ? { ...t, ...updated } : t));
       const msg = estado === 'confirmado' ? 'Turno confirmado' : estado === 'cancelado' ? 'Turno cancelado' : 'Turno archivado';
       this.toast.success(msg);
       this.cerrarModal();
@@ -133,17 +178,53 @@ export class ListadoTurnos implements OnInit {
     this.verResena = !this.verResena;
   }
 
+  toggleMotivoCancelacion() {
+    this.verMotivoCancel = !this.verMotivoCancel;
+  }
+
+  get motivoCancelacion(): string {
+    const raw = this.seleccionado?.mensaje_rechazo ?? this.seleccionado?.motivo_cancelacion ?? '';
+    return typeof raw === 'string' ? raw.trim() : '';
+  }
+
   toggleFiltros() {
     this.filtrosAbiertos = !this.filtrosAbiertos;
+    if (!this.filtrosAbiertos) {
+      this.submenuEspecialidadesAbierto = false;
+    }
   }
 
-  ordenarPor(tipo: 'fecha_desc' | 'fecha_asc' | 'estado' | 'especialidad' | 'paciente') {
-    this.ordenActual = tipo;
-    this.aplicarOrden();
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.filtrosAbiertos) return;
+    const target = event.target as Node | null;
+    if (target && this.elRef.nativeElement.contains(target)) return;
     this.filtrosAbiertos = false;
+    this.submenuEspecialidadesAbierto = false;
   }
 
-  private aplicarOrden() {
+  ordenarPor(tipo: OrdenTurno) {
+    if (this.ordenActual === tipo) {
+      this.filtrosAbiertos = false;
+      return;
+    }
+    this.ordenActual = tipo;
+    this.aplicarFiltrosYOrden();
+    this.filtrosAbiertos = false;
+    this.submenuEspecialidadesAbierto = false;
+    this.ordenPorChange.emit(this.ordenActual);
+  }
+
+  private aplicarFiltrosYOrden() {
+    let arr = [...this.turnosBase];
+    if (this.filtroEspecialidad) {
+      const filtro = this.filtroEspecialidad.toLowerCase();
+      arr = arr.filter((t) => (t?.especialidad || '').toLowerCase() === filtro);
+    }
+    this.turnos = this.aplicarOrden(arr);
+  }
+
+  private aplicarOrden(source: any[]) {
     const byString = (a: any, b: any, key: string) => String(a?.[key] ?? '').localeCompare(String(b?.[key] ?? ''));
     const byPaciente = (a: any, b: any) => {
       const an = `${a?.paciente?.nombre ?? ''} ${a?.paciente?.apellido ?? ''}`.trim();
@@ -152,7 +233,7 @@ export class ListadoTurnos implements OnInit {
     };
     const byFecha = (a: any, b: any) => new Date(a.fecha_turno).getTime() - new Date(b.fecha_turno).getTime();
 
-    const arr = [...this.turnos];
+    const arr = [...source];
     switch (this.ordenActual) {
       case 'fecha_asc':
         arr.sort(byFecha);
@@ -170,7 +251,39 @@ export class ListadoTurnos implements OnInit {
         arr.sort(byPaciente);
         break;
     }
-    this.turnos = arr;
+    return arr;
+  }
+
+  get etiquetaOrdenActual() {
+    return this.etiquetasOrden[this.ordenActual];
+  }
+
+  get etiquetaFiltroEspecialidad() {
+    if (!this.filtroEspecialidad) return 'Todas las especialidades';
+    const match = this.especialidades.find(
+      (e: any) => this.obtenerValorEspecialidad(e).toLowerCase() === this.filtroEspecialidad?.toLowerCase()
+    );
+    return match ? this.obtenerEtiquetaEspecialidad(match) : this.filtroEspecialidad;
+  }
+
+  toggleSubmenuEspecialidades(event: MouseEvent) {
+    event.stopPropagation();
+    this.submenuEspecialidadesAbierto = !this.submenuEspecialidadesAbierto;
+  }
+
+  seleccionarEspecialidadFiltro(valor: string | null) {
+    this.filtroEspecialidad = valor;
+    this.filtrosAbiertos = false;
+    this.submenuEspecialidadesAbierto = false;
+    this.aplicarFiltrosYOrden();
+  }
+
+  obtenerEtiquetaEspecialidad(item: any) {
+    return item?.nombre || item?.especialidad || 'Sin nombre';
+  }
+
+  obtenerValorEspecialidad(item: any) {
+    return item?.especialidad || item?.nombre || '';
   }
 
   calificarAtencion() {

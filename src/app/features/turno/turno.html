@@ -3,7 +3,7 @@
     <div class="avatar-wrap">
       <img *ngIf="pacienteAvatar; else inicial" [src]="pacienteAvatar" class="avatar" alt="Paciente" />
       <ng-template #inicial>
-        <div class="avatar avatar--placeholder">{{ pacienteNombre?.charAt(0) || '?' }}</div>
+        <div class="avatar avatar--placeholder">{{ pacienteNombre.charAt(0) || '?' }}</div>
       </ng-template>
     </div>
     <div class="header-info">

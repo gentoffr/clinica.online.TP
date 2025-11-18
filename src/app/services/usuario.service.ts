@@ -55,6 +55,16 @@ export class UsuarioService {
     if (error) throw error;
     return data;
   }
+  async obtenerUsuariosPorIds(ids: string[]) {
+    const únicos = Array.from(new Set((ids ?? []).filter(Boolean)));
+    if (!únicos.length) return [];
+    const { data, error } = await supabase.from('profiles').select('*').in('id', únicos);
+    if (error) {
+      console.error('Error al obtener usuarios por IDs:', error);
+      throw error;
+    }
+    return data ?? [];
+  }
   async obtenerEspecialidadesDisponibles() {
     const { data, error } = await supabase
       .from('especialidades')

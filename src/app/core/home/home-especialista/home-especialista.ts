@@ -21,7 +21,7 @@ type AdminUser = {
 @Component({
   selector: 'app-home-paciente',
   standalone: true,
-  imports: [CommonModule, FormsModule, RegistroTurno, ListadoTurnos, TurnoComponent, PerfilModalComponent, MisPacientes],
+  imports: [CommonModule, FormsModule, ListadoTurnos, TurnoComponent, PerfilModalComponent, MisPacientes],
   templateUrl: './home-especialista.html',
   styleUrls: ['./home-especialista.scss']
 })
@@ -60,6 +60,7 @@ export class HomeEspecialista implements OnInit {
     console.log('[Homepaciente] Historias:', this.turnosEspecialista);
     this.avatarCargando = false;
   }
+
   toggleMenu(): void {
     console.log(this.authService.user);
     this.menuCollapsed = !this.menuCollapsed;

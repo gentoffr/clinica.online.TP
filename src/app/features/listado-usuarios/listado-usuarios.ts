@@ -4,6 +4,10 @@ import { CommonModule } from '@angular/common';
 import { UsuarioService } from '../../services/usuario.service';
 import { Pdf } from '../pdf/pdf';
 import { FormsModule } from '@angular/forms';
+import { FullNamePipe } from '../../shared/pipes/full-name.pipe';
+import { FallbackPipe } from '../../shared/pipes/fallback.pipe';
+import { HoverClassDirective } from '../../shared/directives/hover-class.directive';
+import { DebounceClickDirective } from '../../shared/directives/debounce-click.directive';
 type Usuario = {
   id: string;
   nombre?: string;
@@ -15,7 +19,7 @@ type Usuario = {
 @Component({
   selector: 'app-listado-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, Pdf],
+  imports: [CommonModule, FormsModule, Pdf, FullNamePipe, FallbackPipe, HoverClassDirective, DebounceClickDirective],
   templateUrl: './listado-usuarios.html',
   styleUrls: ['./listado-usuarios.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

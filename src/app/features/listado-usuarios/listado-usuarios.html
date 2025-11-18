@@ -49,7 +49,13 @@
 
   <!-- Listado -->
   <div *ngIf="!cargando && !error && usuarios.length" class="grid">
-    <article class="card is-clickable" *ngFor="let u of usuarios; trackBy: trackById" (click)="abrirModal(u)" aria-role="button">
+    <article
+      class="card is-clickable"
+      *ngFor="let u of usuarios; trackBy: trackById"
+      (click)="abrirModal(u)"
+      aria-role="button"
+      appHoverClass="is-hovering"
+    >
       <div class="avatar">
         <img *ngIf="u.imagen_perfil[0]; else inicial" [src]="u.imagen_perfil[0]" [alt]="u.nombre || 'Usuario'">
       </div>
@@ -60,8 +66,8 @@
       </ng-template>
 
       <div class="info">
-        <h3 class="nombre">{{ u.nombre }} {{ u.apellido }}</h3>
-        <p class="email">{{ u.email }}</p>
+        <h3 class="nombre">{{ u | fullName }}</h3>
+        <p class="email">{{ u.email | fallback:'Sin email' }}</p>
         <p class="email">Rol: {{ u.rol }}</p>
       </div>
     </article>
@@ -83,8 +89,8 @@
         </ng-template>
 
         <div class="header__info">
-          <h2>{{ seleccionado?.nombre }} {{ seleccionado?.apellido }}</h2>
-          <p class="muted">{{ seleccionado?.email }}</p>
+          <h2>{{ seleccionado | fullName }}</h2>
+          <p class="muted">{{ seleccionado?.email | fallback:'Sin email' }}</p>
         </div>
       </header>
 
@@ -110,7 +116,19 @@
       </section>
 
       <footer class="modal__footer">
-        <button class="btn" (click)="pdfCmp.descargar()">Ver historial de turnos</button>
+        <button
+          class="btn"
+          appDebounceClick
+          (debounceClick)="pdfCmp.descargar()"
+          [disabled]="pdfCmp.descargando"
+          [class.is-loading]="pdfCmp.descargando"
+        >
+          <span *ngIf="!pdfCmp.descargando">Descargar historial de turnos</span>
+          <span *ngIf="pdfCmp.descargando" class="btn-spinner">
+            <span class="spinner spinner--inline" aria-hidden="true"></span>
+            Descargando…
+          </span>
+        </button>
       </footer>
     </article>
   </div>

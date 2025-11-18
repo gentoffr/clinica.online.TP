@@ -24,9 +24,24 @@
   </div>
 
   <!-- Acciones -->
-  <div *ngIf="!cargando && !error && turnos.length" class="acciones">
-    <h4 style="display: flex;">Mis turnos</h4>
+  <div *ngIf="mostrarControles && !cargando && !error && turnos.length" class="acciones">
+    <div class="acciones__left">
+      <h4>Mis turnos</h4>
+      <span class="orden-resumen">Ordenado por <span class="orden-resumen__value">{{ etiquetaOrdenActual }}</span></span>
+      <span class="orden-resumen">Especialidad <span class="orden-resumen__value">{{ etiquetaFiltroEspecialidad }}</span></span>
+    </div>
     <div class="acciones__right">
+      <button
+        *ngIf="!esEspecialista"
+        class="icon-btn"
+        type="button"
+        title="Recargar turnos"
+        aria-label="Recargar turnos"
+        (click)="reload()"
+        [disabled]="cargando"
+      >
+        <span class="material-symbols-outlined">refresh</span>
+      </button>
       <button class="icon-btn" type="button" title="Ordenar" (click)="toggleFiltros()">
         <span class="material-symbols-outlined">filter_list</span>
       </button>
@@ -35,7 +50,31 @@
         <button class="sort-item" [class.active]="ordenActual==='fecha_desc'" (click)="ordenarPor('fecha_desc')">Fecha más reciente</button>
         <button class="sort-item" [class.active]="ordenActual==='fecha_asc'" (click)="ordenarPor('fecha_asc')">Fecha más antigua</button>
         <button class="sort-item" [class.active]="ordenActual==='estado'" (click)="ordenarPor('estado')">Estado</button>
-        <button class="sort-item" [class.active]="ordenActual==='especialidad'" (click)="ordenarPor('especialidad')">Especialidad</button>
+        <div class="sort-item sort-item--submenu" [class.open]="submenuEspecialidadesAbierto">
+          <button type="button" class="sort-item__trigger" (click)="toggleSubmenuEspecialidades($event)">
+            Especialidad
+            <span class="sort-item__hint">{{ etiquetaFiltroEspecialidad }}</span>
+          </button>
+          <div class="sort-submenu" *ngIf="submenuEspecialidadesAbierto">
+            <button type="button" class="sort-submenu__item" [class.active]="!filtroEspecialidad" (click)="seleccionarEspecialidadFiltro(null)">
+              Todas las especialidades
+            </button>
+            <div class="sort-submenu__list" *ngIf="!especialidadesCargando; else cargandoEsp">
+              <button
+                type="button"
+                class="sort-submenu__item"
+                *ngFor="let esp of especialidades"
+                [class.active]="filtroEspecialidad?.toLowerCase() === obtenerValorEspecialidad(esp).toLowerCase()"
+                (click)="seleccionarEspecialidadFiltro(obtenerValorEspecialidad(esp))"
+              >
+                {{ obtenerEtiquetaEspecialidad(esp) }}
+              </button>
+            </div>
+            <ng-template #cargandoEsp>
+              <div class="sort-submenu__estado">Cargando especialidades…</div>
+            </ng-template>
+          </div>
+        </div>
         <button class="sort-item" [class.active]="ordenActual==='paciente'" (click)="ordenarPor('paciente')">Paciente</button>
       </div>
     </div>
@@ -43,7 +82,13 @@
 
   <!-- Listado -->
   <div *ngIf="!cargando && !error && turnos.length" class="grid">
-    <article class="card" *ngFor="let t of turnos; trackBy: trackById" [class.is-clickable]="true" (click)="abrirModal(t)">
+    <article
+      class="card"
+      *ngFor="let t of turnos; trackBy: trackById"
+      [class.is-clickable]="true"
+      (click)="abrirModal(t)"
+      appHoverClass="is-hovering"
+    >
       <ng-template #inicial>
         <div class="avatar avatar--placeholder">
           {{ (t.especialista?.nombre ?? t.especialista?.email ?? '?').charAt(0).toUpperCase() }}
@@ -56,7 +101,7 @@
           {{ t.especialista?.nombre }} {{ t.especialista?.apellido }}
           <span class="muted" *ngIf="t.especialidad">· {{ t.especialidad }}</span>
         </h3>
-        <p class="detalle">Estado: {{t.estado}}</p>
+        <p class="detalle">Estado: {{ t.estado | estadoTurno }}</p>
         <p class="detalle">
           {{ t.fecha_turno | date : "EEEE dd/MM/yyyy, 'Hora' HH:mm" | titlecase }}
         </p>
@@ -98,7 +143,7 @@
         </div>
         <div class="row" *ngIf="seleccionado?.estado">
           <div class="label">Estado</div>
-          <div class="value">{{ seleccionado?.estado }}</div>
+          <div class="value">{{ seleccionado?.estado | estadoTurno }}</div>
         </div>
         <div class="row" *ngIf="verResena">
           <div class="label">Reseña</div>
@@ -108,6 +153,17 @@
             </ng-container>
             <ng-template #sinResena>
               <span class="muted">No hay reseña cargada</span>
+            </ng-template>
+          </div>
+        </div>
+        <div class="row" *ngIf="verMotivoCancel && seleccionado?.estado === 'cancelado'">
+          <div class="label">Motivo de cancelación</div>
+          <div class="value">
+            <ng-container *ngIf="motivoCancelacion; else sinMotivo">
+              <p class="resena-text">{{ motivoCancelacion }}</p>
+            </ng-container>
+            <ng-template #sinMotivo>
+              <span class="muted">No hay motivo registrado</span>
             </ng-template>
           </div>
         </div>
@@ -133,6 +189,13 @@
         </ng-container>
         <ng-template #accionesPaciente>
           <button class="btn" (click)="toggleVerResena()">{{ verResena ? 'Ocultar reseña' : 'Ver reseña' }}</button>
+          <button
+            class="btn primary"
+            *ngIf="seleccionado?.estado === 'cancelado'"
+            (click)="toggleMotivoCancelacion()"
+          >
+            {{ verMotivoCancel ? 'Ocultar motivo' : 'Ver motivo de cancelación' }}
+          </button>
         </ng-template>
       </footer>
     </article>

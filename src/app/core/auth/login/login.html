@@ -19,7 +19,6 @@
       <button type="button" class="scroll-btn right" (click)="scrollStrip(1)" aria-label="Desplazar a la derecha">›</button>
     </div>
     <br>
-    <h2>Iniciar sesión</h2>
     <label>
       <span>Usuario</span>
       <input type="text" [(ngModel)]="usuario" name="usuario" required [class.invalid]="submitted && !usuario" [disabled]="loading" />
@@ -30,8 +29,37 @@
       <span>Contraseña</span>
       <input type="password" [(ngModel)]="password" name="password" required [class.invalid]="submitted && !password" [disabled]="loading" />
     </label>
+    <div class="captcha-section" aria-label="Verificación humana">
+      <div class="captcha-box" role="img" aria-label="Captcha actual">
+        <span class="captcha-text">{{ captchaValue }}</span>
+        <button
+          type="button"
+          class="captcha-refresh"
+          (click)="refreshCaptcha()"
+          [disabled]="loading"
+          aria-label="Actualizar captcha"
+        >
+          ↻
+        </button>
+      </div>
+      <label class="captcha-label">
+        <span>Escribe los caracteres</span>
+        <input
+          type="text"
+          name="captcha"
+          autocomplete="off"
+          spellcheck="false"
+          inputmode="latin"
+          [(ngModel)]="captchaInput"
+          (ngModelChange)="onCaptchaInput($event)"
+          [class.invalid]="(submitted || captchaTouched) && !captchaIsValid"
+          [disabled]="loading"
+        />
+      </label>
+      <small class="error" *ngIf="(submitted || captchaTouched) && !captchaIsValid">Captcha inválido, intenta de nuevo</small>
+    </div>
     <div class="actions">
-      <button type="submit" class="btn" [disabled]="loading || !usuario || !password">
+      <button type="submit" class="btn" [disabled]="loading || !usuario || !password || !captchaIsValid">
         <span class="spinner" *ngIf="loading" aria-hidden="true"></span>
         <span>{{ loading ? 'Entrando…' : 'Entrar' }}</span>
       </button>

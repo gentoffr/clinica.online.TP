@@ -233,5 +233,108 @@ export class TurnoService {
     return data;
   }
 
+  /** Conteo de turnos por especialidad (opcionalmente en un rango de fechas). */
+  async contarTurnosPorEspecialidad(desde?: Date | string | null, hasta?: Date | string | null) {
+    let query = supabase.from('turnos').select('especialidad');
+    query = this.aplicarFiltroFechas(query, desde, hasta);
+    const { data, error } = await query;
+    if (error) throw error;
+    const acumulado: Record<string, number> = {};
+    for (const t of data ?? []) {
+      const key = (t?.especialidad || 'Sin especialidad') as string;
+      acumulado[key] = (acumulado[key] ?? 0) + 1;
+    }
+    return Object.entries(acumulado).map(([especialidad, total]) => ({ especialidad, total }));
+  }
 
+  /** Conteo de turnos por día (YYYY-MM-DD) en un rango opcional. */
+  async contarTurnosPorDia(
+    desde?: Date | string | null,
+    hasta?: Date | string | null,
+    especialidad?: string | null
+  ) {
+    let query = supabase.from('turnos').select('fecha_turno');
+    query = this.aplicarFiltroFechas(query, desde, hasta);
+    if (especialidad) {
+      query = query.eq('especialidad', especialidad);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    const acumulado: Record<string, number> = {};
+    for (const t of data ?? []) {
+      const fecha = this.obtenerDia(t?.fecha_turno);
+      if (!fecha) continue;
+      acumulado[fecha] = (acumulado[fecha] ?? 0) + 1;
+    }
+    return Object.entries(acumulado)
+      .map(([fecha, total]) => ({ fecha, total }))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
+
+  /** Cantidad de turnos solicitados (creados) para un especialista en un lapso. */
+  async contarTurnosSolicitadosPorMedico(
+    idEspecialista: string,
+    desde?: Date | string | null,
+    hasta?: Date | string | null
+  ) {
+    let query = supabase
+      .from('turnos')
+      .select('id', { count: 'exact', head: true })
+      .eq('id_especialista', idEspecialista);
+    query = this.aplicarFiltroFechas(query, desde, hasta);
+    const { count, error } = await query;
+    if (error) throw error;
+    return count ?? 0;
+  }
+
+  /** Cantidad de turnos completados por un especialista en un lapso. */
+  async contarTurnosCompletadosPorMedico(
+    idEspecialista: string,
+    desde?: Date | string | null,
+    hasta?: Date | string | null
+  ) {
+    let query = supabase
+      .from('turnos')
+      .select('id', { count: 'exact', head: true })
+      .eq('id_especialista', idEspecialista)
+      .eq('estado', 'completado');
+    query = this.aplicarFiltroFechas(query, desde, hasta);
+    const { count, error } = await query;
+    if (error) throw error;
+    return count ?? 0;
+  }
+
+  /** Lista de turnos (cualquier estado) en un rango opcional. */
+  async obtenerTurnosEntregados(desde?: Date | string | null, hasta?: Date | string | null) {
+    let query = supabase
+      .from('turnos')
+      .select('*')
+      .order('fecha_turno', { ascending: false });
+    query = this.aplicarFiltroFechas(query, desde, hasta);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  private aplicarFiltroFechas(query: any, desde?: Date | string | null, hasta?: Date | string | null) {
+    const inicio = this.normalizarFecha(desde);
+    const fin = this.normalizarFecha(hasta);
+    if (inicio) query = query.gte('fecha_turno', inicio);
+    if (fin) query = query.lte('fecha_turno', fin);
+    return query;
+  }
+
+  private normalizarFecha(value?: Date | string | null) {
+    if (!value) return null;
+    const fecha = value instanceof Date ? value : new Date(value);
+    if (isNaN(fecha.getTime())) return null;
+    return fecha.toISOString();
+  }
+
+  private obtenerDia(value: any) {
+    if (!value) return null;
+    const fecha = new Date(value);
+    if (isNaN(fecha.getTime())) return null;
+    return fecha.toISOString().slice(0, 10);
+  }
 }

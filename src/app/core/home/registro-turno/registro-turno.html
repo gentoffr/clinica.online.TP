@@ -165,34 +165,77 @@
 
 <!-- MODAL TURNOS (15 días) -->
 <div class="modal-backdrop" *ngIf="modalTurnosAbierto" (click)="cerrarModalTurnos()"></div>
-<div class="modal" *ngIf="modalTurnosAbierto" role="dialog" aria-modal="true" aria-label="Selector de turnos">
-  <header class="modal-header">
-    <h4>Disponibilidad próximos 15 días</h4>
-    <button type="button" class="icon-btn" (click)="cerrarModalTurnos()" aria-label="Cerrar">✕</button>
-  </header>
-
-  <div class="modal-body">
-    <aside class="dias">
-      <button
-        *ngFor="let d of dias; index as i"
-        type="button"
-        class="dia"
-        [class.activo]="i === idxActivo"
-        (click)="seleccionarDia(i)">
-        <span class="dia-corto">{{ d.corto }}</span>
-        <span class="dia-largo">{{ d.etiqueta }}</span>
-      </button>
-    </aside>
-
-    <section class="slots">
-      <div class="slots-grid" *ngIf="slotsActivos.length; else sinSlots">
-        <button *ngFor="let h of slotsActivos" type="button" class="slot" (click)="seleccionarHora(h)">
-          {{ h }}
+<div class="modal modal--turnos" *ngIf="modalTurnosAbierto" role="dialog" aria-modal="true" aria-label="Selector de turnos">
+  <div class="modal-body modal-body--turnos">
+    <section
+      class="calendario"
+      (pointerdown)="onCalendarioPointerDown($event)"
+      (pointerup)="onCalendarioPointerUp($event)"
+      (pointerleave)="onCalendarioPointerLeave()"
+      (pointercancel)="onCalendarioPointerLeave()">
+      <header class="calendario-header">
+        <div class="cal-nav">
+          <button
+            type="button"
+            class="icon-btn"
+            aria-label="Mes anterior"
+            (click)="cambiarMes(-1)"
+            [disabled]="!puedeIrMesAnterior()">
+            &lsaquo;
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            aria-label="Mes siguiente"
+            (click)="cambiarMes(1)">
+            &rsaquo;
+          </button>
+        </div>
+        <div class="cal-headline">
+          <p>{{ mesActualEtiqueta | capitalizar }}</p>
+          <small>Elegí un día y deslizá para cambiar de mes</small>
+        </div>
+        <button
+          type="button"
+          class="icon-btn cal-close"
+          aria-label="Cerrar selector"
+          (click)="cerrarModalTurnos()">
+          ✕
+        </button>
+      </header>
+      <div class="calendario-grid">
+        <button
+          *ngFor="let d of dias; index as i"
+          type="button"
+          class="cal-dia"
+          [class.activo]="i === idxActivo"
+          [class.pasado]="d.pasado"
+          [disabled]="d.pasado"
+          (click)="seleccionarDia(i)">
+          <span class="cal-dia-num">{{ d.date | date: 'dd' }}</span>
+          <span class="cal-dia-label">{{ d.corto | capitalizar }}</span>
+          <span class="cal-dia-extra">{{ d.etiqueta | capitalizar }}</span>
         </button>
       </div>
-      <ng-template #sinSlots>
-        <div class="sin-slots">Sin disponibilidad para este día</div>
-      </ng-template>
+    </section>
+
+    <section class="slots-panel">
+      <header class="slots-header">
+        <div>
+          <h5>{{ dias[idxActivo]?.etiqueta ? (dias[idxActivo]?.etiqueta | capitalizar) : '—' }}</h5>
+          <small>Horarios disponibles</small>
+        </div>
+      </header>
+      <div class="slots">
+        <div class="slots-grid" *ngIf="slotsActivos.length; else sinSlots">
+          <button *ngFor="let h of slotsActivos" type="button" class="slot" (click)="seleccionarHora(h)">
+            {{ h }}
+          </button>
+        </div>
+        <ng-template #sinSlots>
+          <div class="sin-slots">Sin disponibilidad para este día</div>
+        </ng-template>
+      </div>
     </section>
   </div>
 </div>

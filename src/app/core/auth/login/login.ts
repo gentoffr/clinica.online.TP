@@ -23,6 +23,10 @@ export class Login implements OnInit {
   loading = false;
   submitted = false;
   usuarios: any[] = [];
+  captchaValue = '';
+  captchaInput = '';
+  captchaTouched = false;
+  private readonly captchaChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   getFoto(u: any) {
     return (
       (u?.imagen_perfil && u.imagen_perfil[0]) ||
@@ -38,6 +42,7 @@ export class Login implements OnInit {
     private usuarioService: UsuarioService
   ) {}
   async ngOnInit() {
+    this.generateCaptcha();
     this.usuarios = await this.usuarioService.obtenerTodosLosUsuarios();
     console.log(this.usuarios);
   }
@@ -64,6 +69,7 @@ export class Login implements OnInit {
     if (this.loading) return;
     const email = (this.usuario || '').trim();
     const pwd = (this.password || '').trim();
+    this.captchaTouched = true;
 
     if (form && form.invalid) {
       this.toast.warning('Revisa los campos requeridos');
@@ -72,6 +78,10 @@ export class Login implements OnInit {
     }
     if (!email || !pwd) {
       this.toast.warning('Completa email y contraseña');
+      return;
+    }
+    if (!this.captchaIsValid) {
+      this.toast.warning('Confirma el captcha antes de continuar');
       return;
     }
 
@@ -116,5 +126,38 @@ export class Login implements OnInit {
     if (usuario.especialidad) return 'especialista';
     if (usuario.obraSocial || usuario.obra_social) return 'paciente';
     return 'paciente';
+  }
+
+  get captchaIsValid() {
+    if (!this.captchaValue) return false;
+    return this.normalizeCaptcha(this.captchaInput) === this.normalizeCaptcha(this.captchaValue);
+  }
+
+  onCaptchaInput(value: string) {
+    this.captchaInput = value;
+    if (value && !this.captchaTouched) {
+      this.captchaTouched = true;
+    }
+  }
+
+  refreshCaptcha() {
+    this.generateCaptcha();
+  }
+
+  private generateCaptcha() {
+    const length = 5 + Math.floor(Math.random() * 2);
+    let code = '';
+    for (let i = 0; i < length; i++) {
+      code += this.captchaChars[Math.floor(Math.random() * this.captchaChars.length)];
+    }
+    this.captchaValue = code;
+    this.captchaInput = '';
+    this.captchaTouched = false;
+  }
+
+  private normalizeCaptcha(value: string) {
+    return (value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
   }
 }

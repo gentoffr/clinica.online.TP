@@ -22,6 +22,7 @@ export class Pdf implements OnInit, OnChanges {
   historial: any[] = [];
   cargando = true;
   error = '';
+  descargando = false;
   constructor(private auth: AuthService, private turnoService: TurnoService, private usuarios: UsuarioService) {}
 
   async ngOnInit() {
@@ -50,12 +51,14 @@ export class Pdf implements OnInit, OnChanges {
   }
 
   async descargarPDF() {
+    if (this.descargando) return;
+    if (!this.pdfContent) return;
+    let host: HTMLDivElement | null = null;
+    this.descargando = true;
     try {
-      if (!this.pdfContent) return;
-
       // Clonamos el contenido y lo montamos fuera de pantalla con un ancho fijo (A4 aprox)
       const original = this.pdfContent.nativeElement;
-      const host = document.createElement('div');
+      host = document.createElement('div');
       host.style.position = 'fixed';
       host.style.left = '-10000px';
       host.style.top = '0';
@@ -87,8 +90,12 @@ export class Pdf implements OnInit, OnChanges {
         }
       }
       pdf.save('historial-turnos.pdf');
-      document.body.removeChild(host);
-    } catch {}
+    } catch (e) {
+      console.error('No se pudo generar el PDF', e);
+    } finally {
+      if (host?.parentNode) host.parentNode.removeChild(host);
+      this.descargando = false;
+    }
   }
   // Alias cómodo si el padre llama descargar()
   descargar() { return this.descargarPDF(); }
